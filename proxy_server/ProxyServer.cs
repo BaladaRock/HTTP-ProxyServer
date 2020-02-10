@@ -1,14 +1,13 @@
 ﻿using System;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
 namespace ProxyServer
 {
-    internal class ProxyServer
+    internal static class ProxyServer
     {
-        private const string LocalHost = "192.168.1.125";
+        private const string LocalHost = "192.168.1.25";
 
         public static void Main()
         {
@@ -27,15 +26,23 @@ namespace ProxyServer
 
                 if (CheckRequest(message))
                 {
-                    SendRequestToServer(message);
-                }
+                    string[] requestDetails = message.Trim().Split('\n');
+                    string hostHeader = requestDetails[1];
+                    int lastPosition = hostHeader.LastIndexOf('\r');
 
+                    string host = hostHeader.Substring(6, lastPosition - 6);
+
+                    TcpClient proxyClient = new TcpClient(host, 80);
+
+                    SendRequestToServer(proxyClient, host);
+
+                    GetResponse(client);
+                }
 
                 // Shutdown and end connection
                 client.Close();
                 Console.Read();
             }
-
         }
 
         private static bool CheckRequest(string request)
@@ -63,19 +70,20 @@ namespace ProxyServer
             return message;
         }
 
-        private static void SendRequestToServer(string message)
+        private static void GetResponse(TcpClient client)
         {
-            string[] requestDetails = message.Trim().Split('\n');
+            byte[] receivedMessage = new byte[client.ReceiveBufferSize];
 
-            int hostIndex = message.IndexOf("\nHost: ");
-            string host = message.Substring(hostIndex + 7, requestDetails[1].Length - 7);
+            int size = client.Client.Receive(receivedMessage);
+            string response = Encoding.UTF8.GetString(receivedMessage, 0, size);
 
-            TcpListener hostServer = new TcpListener(IPAddress.Parse(LocalHost), 8081);
-            TcpClient client = new TcpClient($"http://{host}", 8081);
+            Console.WriteLine($"Response from host: {response}");
+        }
 
-            Console.Write($"Proxy has sent request to host: {host}");
-
-            Console.Read();
+        private static void SendRequestToServer(TcpClient client, string host)
+        {
+            client.Client.Send(Encoding.ASCII.GetBytes(host));
+            Console.WriteLine($"Proxy has sent request to host: {host}");
         }
     }
 }
