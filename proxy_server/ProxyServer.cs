@@ -7,42 +7,38 @@ namespace ProxyServer
 {
     internal static class ProxyServer
     {
-        private const string LocalHost = "192.168.1.125";
+        private const string ProxyIP = "192.168.1.125";
 
         public static void Main()
         {
-            TcpListener proxy = new TcpListener(IPAddress.Parse(LocalHost), 8080);
+            TcpListener proxy = new TcpListener(IPAddress.Parse(ProxyIP), 8080);
 
             proxy.Start();
 
             while (true)
             {
                 Console.Write("Waiting for web client... ");
+                string response = string.Empty;
 
                 TcpClient client = proxy.AcceptTcpClient();
                 Console.WriteLine("Connected!");
 
-                string response = string.Empty;
-
                 NetworkStream browserStream = client.GetStream();
-                string message = GetRequest(browserStream, client);
+                string request = GetRequest(browserStream, client);
 
-                if (CheckRequest(message))
+                if (CheckRequest(request))
                 {
-                    string[] requestDetails = message.Trim().Split('\n');
+                    string[] requestDetails = request.Trim().Split('\n');
                     string hostHeader = requestDetails[1];
                     int lastPosition = hostHeader.LastIndexOf('\r');
 
                     string host = hostHeader.Substring(6, lastPosition - 6);
-
                     NetworkStream stream = new TcpClient(host, 80).GetStream();
 
-                    SendRequest(stream, host);
+                    SendRequest(stream, request);
 
-                    response += GetResponse(stream);
+                    response = GetResponse(stream);
                     Console.WriteLine($"Response from host: {response}");
-
-                    
 
                     SendResponse(client.GetStream(), response);
                 }
@@ -73,7 +69,7 @@ namespace ProxyServer
                 stream.Read(buffer, 0, client.ReceiveBufferSize);
 
                 //The received request
-                message += Encoding.ASCII.GetString(buffer);
+                message = Encoding.ASCII.GetString(buffer);
                 Console.WriteLine("Request: " + message);
             }
 
@@ -82,16 +78,16 @@ namespace ProxyServer
 
         private static string GetResponse(NetworkStream stream)
         {
-            byte[] buffer = new byte[256];
+            byte[] buffer = new byte[1000];
             int bytes = stream.Read(buffer, 0, buffer.Length);
 
             return Encoding.ASCII.GetString(buffer, 0, bytes);
         }
 
-        private static void SendRequest(NetworkStream stream, string host)
+        private static void SendRequest(NetworkStream stream, string request)
         {
-            stream.Write(Encoding.ASCII.GetBytes(host));
-            Console.WriteLine($"Proxy has sent request to host: {host}");
+            stream.Write(Encoding.ASCII.GetBytes(request));
+            Console.WriteLine($"Proxy has sent request to host: {request}");
         }
     }
 }
