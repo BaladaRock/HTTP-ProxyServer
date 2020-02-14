@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -7,7 +9,7 @@ namespace ProxyServer
 {
     internal static class ProxyServer
     {
-        private const string ProxyIP = "192.168.1.125";
+        private const string ProxyIP = "192.168.1.5";
 
         public static void Main()
         {
@@ -42,7 +44,7 @@ namespace ProxyServer
                     SendResponse(client, response);
                 }
 
-                Console.Read();
+               // Console.Read();
             }
         }
 
@@ -78,19 +80,25 @@ namespace ProxyServer
         private static byte[] GetResponse(NetworkStream stream)
         {
             // Buffer to store the response bytes.
-            byte[] recv = new byte[1000];
+            byte[] recv = new byte[1024];
+            byte[] dataRead;
 
             // Read the first batch of the TcpServer response bytes.
-            int bytes = stream.Read(recv, 0, recv.Length); //(**This receives the data using the byte method**)
 
-            byte[] response = new byte[bytes];
+            //int bytes = stream.Read(recv, 0, recv.Length); //(**This receives the data using the byte method**)
 
-            for (int i = 0; i < bytes; i++)
+            int bytesRead = 0;
+            using (MemoryStream readStream = new MemoryStream())
             {
-                response[i] = recv[i];
+                while ((bytesRead = stream.Read(recv, 0, recv.Length)) > 0)
+                {
+                    readStream.Write(recv, 0, bytesRead);
+                }
+
+                dataRead = readStream.ToArray();
             }
 
-            return response;
+            return dataRead;
         }
 
         private static void SendRequest(NetworkStream stream, string request)
