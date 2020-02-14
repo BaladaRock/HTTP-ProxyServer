@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -43,15 +42,7 @@ namespace ProxyServer
 
                     SendResponse(client, response);
                 }
-
-               // Console.Read();
             }
-        }
-
-        private static void SendResponse(TcpClient browserClient, byte[] response)
-        {
-            browserClient.Client.Send(response);
-            Console.WriteLine($"Proxy has sent host response back to browser: {response}");
         }
 
         private static bool CheckRequest(string request)
@@ -69,7 +60,6 @@ namespace ProxyServer
                 buffer = new byte[client.ReceiveBufferSize];
                 stream.Read(buffer, 0, client.ReceiveBufferSize);
 
-                //The received request
                 message = Encoding.UTF8.GetString(buffer);
                 Console.WriteLine("Request: " + message);
             }
@@ -79,15 +69,10 @@ namespace ProxyServer
 
         private static byte[] GetResponse(NetworkStream stream)
         {
-            // Buffer to store the response bytes.
             byte[] recv = new byte[1024];
             byte[] dataRead;
-
-            // Read the first batch of the TcpServer response bytes.
-
-            //int bytes = stream.Read(recv, 0, recv.Length); //(**This receives the data using the byte method**)
-
             int bytesRead = 0;
+
             using (MemoryStream readStream = new MemoryStream())
             {
                 while ((bytesRead = stream.Read(recv, 0, recv.Length)) > 0)
@@ -105,6 +90,12 @@ namespace ProxyServer
         {
             stream.Write(Encoding.ASCII.GetBytes(request));
             Console.WriteLine($"Proxy has sent request to host: {request}");
+        }
+
+        private static void SendResponse(TcpClient browserClient, byte[] response)
+        {
+            browserClient.Client.Send(response);
+            Console.WriteLine($"Proxy has sent host response back to browser: {response}");
         }
     }
 }
