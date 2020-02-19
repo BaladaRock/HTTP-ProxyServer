@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -8,7 +10,7 @@ namespace ProxyServer
 {
     internal static class ProxyServer
     {
-        private const string ProxyIP = "192.168.1.5";
+        private const string ProxyIP = "192.168.1.125";
 
         public static void Main()
         {
@@ -28,21 +30,26 @@ namespace ProxyServer
 
                 if (CheckRequest(request))
                 {
-                    string[] requestDetails = request.Trim().Split('\n');
-                    string hostHeader = requestDetails[1];
-                    int lastPosition = hostHeader.LastIndexOf('\r');
-
-                    string host = hostHeader.Substring(6, lastPosition - 6);
+                    string host = GetHost(request);
                     NetworkStream stream = new TcpClient(host, 80).GetStream();
 
                     SendRequest(stream, request);
 
                     byte[] response = GetResponse(stream);
-                    Console.WriteLine($"Response from host: {response}");
+                    Console.WriteLine($"Response from host: {Encoding.UTF8.GetString(response)}");
 
                     SendResponse(client, response);
                 }
             }
+        }
+
+        private static string GetHost(string request)
+        {
+            string[] requestDetails = request.Trim().Split('\n');
+            string hostHeader = requestDetails[1];
+            int lastPosition = hostHeader.LastIndexOf('\r');
+
+            return hostHeader.Substring(6, lastPosition - 6);
         }
 
         private static bool CheckRequest(string request)
@@ -88,14 +95,23 @@ namespace ProxyServer
 
         private static void SendRequest(NetworkStream stream, string request)
         {
-            stream.Write(Encoding.ASCII.GetBytes(request));
+            stream.Write(Encoding.UTF8.GetBytes(request));
             Console.WriteLine($"Proxy has sent request to host: {request}");
         }
 
         private static void SendResponse(TcpClient browserClient, byte[] response)
         {
+            string textResponse = Encoding.UTF8.GetString(response);
+
+            //CheckForChunked(textResponse);
             browserClient.Client.Send(response);
-            Console.WriteLine($"Proxy has sent host response back to browser: {response}");
+
+            Console.WriteLine($"Proxy has sent host response back to browser: {textResponse}");
+        }
+
+        private static void CheckForChunked(string response)
+        {
+
         }
     }
 }
