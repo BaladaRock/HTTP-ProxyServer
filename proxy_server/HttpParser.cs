@@ -7,37 +7,28 @@ namespace ProxyHTTP
     {
         private readonly byte[] httpResponse;
 
-        public HttpParser()
-        {
-        }
-
         public HttpParser(byte[] response)
-            : this()
         {
             httpResponse = response;
         }
 
         public bool Contains(byte[] subArray)
         {
-            return GivePosition(subArray, out int position);
+            return GivePosition(subArray) != -1;
         }
 
-        public bool GivePosition(byte[] subArray, out int position)
+        public int GivePosition(byte[] subArray)
         {
             int wantedLength = subArray.Length;
-            int positionCopy = position = 0;
 
             var subSets = httpResponse.Select((_, index) =>
-                    httpResponse.Skip(index).Take(wantedLength));
+                httpResponse.Skip(index).Take(wantedLength))
+                  .ToArray();
 
-            bool checker = subSets.Any(subSet =>
-                   {
-                       positionCopy = Array.IndexOf(httpResponse, subSet.First());
-                       return subSet.SequenceEqual(subArray);
-                   });
-
-            position = positionCopy;
-            return checker;
+            return Array.IndexOf(
+                 httpResponse,
+                 Array.Find(subSets, subSet =>
+                     subSet.SequenceEqual(subArray))?.First());
         }
     }
 }
