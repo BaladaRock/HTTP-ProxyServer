@@ -1,29 +1,43 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
-using System.Text;
 
 namespace ProxyHTTP
 {
     public class HttpParser
     {
-        private byte[] httpResponse;
+        private readonly byte[] httpResponse;
+
+        public HttpParser()
+        {
+        }
 
         public HttpParser(byte[] response)
+            : this()
         {
             httpResponse = response;
         }
 
         public bool Contains(byte[] subArray)
         {
+            return GivePosition(subArray, out int position);
+        }
+
+        public bool GivePosition(byte[] subArray, out int position)
+        {
             int wantedLength = subArray.Length;
+            int positionCopy = position = 0;
 
             var subSets = httpResponse.Select((_, index) =>
-                    httpResponse.Skip(index).Take(wantedLength))
-                        .Where(newArray => newArray.Count() == wantedLength);
+                    httpResponse.Skip(index).Take(wantedLength));
 
-            return subSets.Any(subSet => subSet.SequenceEqual(subArray));
+            bool checker = subSets.Any(subSet =>
+                   {
+                       positionCopy = Array.IndexOf(httpResponse, subSet.First());
+                       return subSet.SequenceEqual(subArray);
+                   });
+
+            position = positionCopy;
+            return checker;
         }
     }
 }

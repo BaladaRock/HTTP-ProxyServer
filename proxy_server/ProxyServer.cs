@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ProxyHTTP;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -60,8 +61,22 @@ namespace ProxyServer
         private static string GetRequest(NetworkStream stream, TcpClient client)
         {
             string message = null;
-            byte[] buffer = null;
+            byte[] buffer = new byte[512];
+            stream.Read(buffer, 0, buffer.Length);
 
+            var httpParser = new HttpParser(buffer);
+
+            while (!httpParser.Contains(Encoding.UTF8.GetBytes("Transfer-Encoding:\nchunked")))
+            {
+                stream.Read(buffer, 0, buffer.Length);
+                httpParser = new HttpParser(buffer);
+
+            }
+
+            buffer = null;
+            var streamReader = new StreamReader(stream);
+            buffer = Encoding.UTF8.GetBytes(streamReader.ReadLine());
+            
             if (client.ReceiveBufferSize > 0)
             {
                 buffer = new byte[client.ReceiveBufferSize];
@@ -101,17 +116,11 @@ namespace ProxyServer
 
         private static void SendResponse(TcpClient browserClient, byte[] response)
         {
-            string textResponse = Encoding.UTF8.GetString(response);
-
-            //CheckForChunked(textResponse);
             browserClient.Client.Send(response);
 
+            string textResponse = Encoding.UTF8.GetString(response);
             Console.WriteLine($"Proxy has sent host response back to browser: {textResponse}");
         }
-
-        private static void CheckForChunked(string response)
-        {
-
-        }
+        
     }
 }
