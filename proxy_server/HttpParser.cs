@@ -14,10 +14,10 @@ namespace ProxyHTTP
 
         public bool Contains(byte[] subArray)
         {
-            return GivePosition(subArray) != -1;
+            return GetPosition(subArray) != subArray.Length - 1;
         }
 
-        public int GivePosition(byte[] subArray)
+        public int GetPosition(byte[] subArray)
         {
             int wantedLength = subArray.Length;
 
@@ -28,7 +28,7 @@ namespace ProxyHTTP
             return Array.IndexOf(
                  httpResponse,
                  Array.Find(subSets, subSet =>
-                     subSet.SequenceEqual(subArray))?.First());
+                     subSet.SequenceEqual(subArray))?.First()) + wantedLength;
         }
     }
 }

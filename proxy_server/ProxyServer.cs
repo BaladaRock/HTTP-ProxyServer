@@ -9,13 +9,18 @@ using System.Text;
 
 namespace ProxyServer
 {
-    internal static class ProxyServer
+    public class ProxyServer
     {
-        private const string ProxyIP = "192.168.1.125";
+        private readonly string proxyIP;
 
-        public static void Main()
+        public ProxyServer(string proxyIP)
         {
-            TcpListener proxy = new TcpListener(IPAddress.Parse(ProxyIP), 8080);
+            this.proxyIP = proxyIP;
+        }
+
+        public void StartProxy()
+        {
+            TcpListener proxy = new TcpListener(IPAddress.Parse(proxyIP), 8080);
 
             proxy.Start();
 
@@ -36,15 +41,15 @@ namespace ProxyServer
 
                     SendRequest(stream, request);
 
-                    byte[] response = GetResponse(stream);
-                    Console.WriteLine($"Response from host: {Encoding.UTF8.GetString(response)}");
+                    HandleResponseHeaders(client, stream);
+                    /*Console.WriteLine($"Response from host: {Encoding.UTF8.GetString(response)}");
 
-                    SendResponse(client, response);
+                    SendResponse(client, response);*/
                 }
             }
         }
 
-        private static string GetHost(string request)
+        private string GetHost(string request)
         {
             string[] requestDetails = request.Trim().Split('\n');
             string hostHeader = requestDetails[1];
@@ -53,12 +58,12 @@ namespace ProxyServer
             return hostHeader.Substring(6, lastPosition - 6);
         }
 
-        private static bool CheckRequest(string request)
+        private bool CheckRequest(string request)
         {
             return request?.StartsWith("GET http://") == true;
         }
 
-        private static string GetRequest(NetworkStream stream, TcpClient client)
+        private string GetRequest(NetworkStream stream, TcpClient client)
         {
             string message = null;
             byte[] buffer = new byte[512];
@@ -76,7 +81,7 @@ namespace ProxyServer
             buffer = null;
             var streamReader = new StreamReader(stream);
             buffer = Encoding.UTF8.GetBytes(streamReader.ReadLine());
-            
+
             if (client.ReceiveBufferSize > 0)
             {
                 buffer = new byte[client.ReceiveBufferSize];
@@ -89,9 +94,27 @@ namespace ProxyServer
             return message;
         }
 
-        private static byte[] GetResponse(NetworkStream stream)
+        private void HandleResponseHeaders(TcpClient client, NetworkStream stream)
         {
-            byte[] recv = new byte[1024];
+            byte[] emptyLine = Encoding.UTF8.GetBytes("\r\n\r\n");
+
+            byte[] buffer = new byte[512];
+            int readFromStream = stream.Read(buffer, 0, buffer.Length);
+
+            var checkHeaders = new HttpParser(buffer);
+
+            if (checkHeaders.Contains(emptyLine))
+            {
+                int bytesToSend = checkHeaders.GetPosition(emptyLine);
+                client.GetStream().Write(buffer, 0, bytesToSend);
+
+                byte[] remainingBytes = buffer.Skip(bytesToSend)
+                    .Take(buffer.Length - bytesToSend)
+                  .ToArray();
+                HandleResponseBody(remainingBytes, client, stream);
+            }
+
+            /*byte[] recv = new byte[1024];
             byte[] dataRead;
             int bytesRead = 0;
 
@@ -105,22 +128,27 @@ namespace ProxyServer
                 dataRead = readStream.ToArray();
             }
 
-            return dataRead;
+            return dataRead;*/
         }
 
-        private static void SendRequest(NetworkStream stream, string request)
+        private void HandleResponseBody(byte[] remainingBytes, TcpClient client, NetworkStream stream)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void SendRequest(NetworkStream stream, string request)
         {
             stream.Write(Encoding.UTF8.GetBytes(request));
             Console.WriteLine($"Proxy has sent request to host: {request}");
         }
 
-        private static void SendResponse(TcpClient browserClient, byte[] response)
+        private void SendResponse(TcpClient browserClient, byte[] response)
         {
             browserClient.Client.Send(response);
 
             string textResponse = Encoding.UTF8.GetString(response);
             Console.WriteLine($"Proxy has sent host response back to browser: {textResponse}");
         }
-        
+
     }
 }

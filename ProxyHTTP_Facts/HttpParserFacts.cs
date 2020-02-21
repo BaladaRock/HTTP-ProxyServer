@@ -15,10 +15,10 @@ namespace ProxyHTTP_Facts
             // When
             var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
             const string subArray = "ab";
-            int position = parser.GivePosition(Encoding.UTF8.GetBytes(subArray));
+            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
 
             // Then
-            Assert.Equal(4, position);
+            Assert.Equal(6, position);
         }
 
         [Fact]
@@ -30,10 +30,10 @@ namespace ProxyHTTP_Facts
             // When
             var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
             const string subArray = "ab";
-            int position = parser.GivePosition(Encoding.UTF8.GetBytes(subArray));
+            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
 
             //Then
-            Assert.Equal(0, position);
+            Assert.Equal(2, position);
         }
 
         [Fact]
@@ -45,10 +45,10 @@ namespace ProxyHTTP_Facts
             // When
             var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
             const string subArray = "\r\n\r\n";
-            int position = parser.GivePosition(Encoding.UTF8.GetBytes(subArray));
+            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
 
             // Then
-            Assert.Equal(4, position);
+            Assert.Equal(8, position);
         }
 
         [Fact]
