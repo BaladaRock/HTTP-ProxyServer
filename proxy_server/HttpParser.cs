@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ProxyHTTP
@@ -14,7 +15,7 @@ namespace ProxyHTTP
 
         public bool Contains(byte[] subArray)
         {
-            return GetPosition(subArray) != subArray.Length - 1;
+            return GetPosition(subArray) != -1;
         }
 
         public int GetPosition(byte[] subArray)
@@ -23,12 +24,32 @@ namespace ProxyHTTP
 
             var subSets = httpResponse.Select((_, index) =>
                 httpResponse.Skip(index).Take(wantedLength))
-                  .ToArray();
+                  .FirstOrDefault(x => x.SequenceEqual(subArray));
 
-            return Array.IndexOf(
-                 httpResponse,
-                 Array.Find(subSets, subSet =>
-                     subSet.SequenceEqual(subArray))?.First()) + wantedLength;
+            return subSets == null
+                ? - 1
+                : SubArrayIndex(httpResponse, 0, subSets.ToArray()) + wantedLength;
+        }
+
+        private int SubArrayIndex(byte[] array, int start, byte[] subArray)
+        {
+            for (int arrayIndex = start;
+                arrayIndex < array.Length - subArray.Length + 1;
+                arrayIndex++)
+            {
+                int count = 0;
+                while (count < subArray.Length
+                   && subArray[count].Equals(array[arrayIndex + count]))
+                {
+                    count++;
+                }
+
+                if (count == subArray.Length)
+                {
+                    return arrayIndex;
+                }
+            }
+            return -1;
         }
     }
 }

@@ -52,6 +52,21 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
+        public void Test_Give_Position_Should_Take_the_ENTIRE_SUBARRAY()
+        {
+            // Given
+            const string data = "abefabcd";
+
+            // When
+            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
+            const string subArray = "abcd";
+            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
+
+            // Then
+            Assert.Equal(8, position);
+        }
+
+        [Fact]
         public void Should_Know_If_A_Response_Contains_EMPTY_LINE()
         {
             // Given

@@ -6,33 +6,41 @@ using System.Text;
 using ProxyHTTP;
 using System.Globalization;
 
-namespace ProxyHTTP_Facts
+namespace ProxyHTTP
 {
     public class HttpReader
     {
-        private byte[] buffer;
+        private readonly byte[] receivedBytes;
+        private readonly byte[] separator;
+        private int index;
 
-        public HttpReader(byte[] readBytes)
+        public HttpReader(byte[] readBytes, string lineSeparator)
         {
-            buffer = readBytes;
+            receivedBytes = readBytes;
+            separator = Encoding.UTF8.GetBytes(lineSeparator);
         }
 
         public byte[] ReadLine()
         {
-            return null;
-            /*stream.Read(buffer);
+            var parser = new HttpParser(receivedBytes);
+            index = parser.GetPosition(separator);
 
-            int position = lineChecker.GivePosition(endlineMarker);
-            return Encoding.UTF8.GetString(buffer.Take(position).ToArray());*/
+            return receivedBytes.Take(index - separator.Length)
+                .ToArray();
         }
 
         public byte[] ReadBytes(string line)
         {
-            return null;
-           /* int bytesToRead = int.Parse(line, NumberStyles.HexNumber);
+            int chunkSize = int.Parse(line, NumberStyles.HexNumber);
 
-            int position = lineChecker.GivePosition(endlineMarker);
-            return buffer.Skip(position + 2).Take(bytesToRead).ToArray();*/
+            return receivedBytes.Skip(index).Take(chunkSize)
+                .ToArray();
+        }
+
+        public bool IsChunkComplete(byte[] byteLine)
+        {
+            return byteLine.Skip(byteLine.Length - separator.Length).AsEnumerable()
+                   .SequenceEqual(separator);
         }
     }
 }

@@ -66,10 +66,9 @@ namespace ProxyServer
         private string GetRequest(NetworkStream stream, TcpClient client)
         {
             string message = null;
-            byte[] buffer = new byte[512];
-            stream.Read(buffer, 0, buffer.Length);
+            byte[] buffer = null;
 
-            var httpParser = new HttpParser(buffer);
+           /* var httpParser = new HttpParser(buffer);
 
             while (!httpParser.Contains(Encoding.UTF8.GetBytes("Transfer-Encoding:\nchunked")))
             {
@@ -80,7 +79,7 @@ namespace ProxyServer
 
             buffer = null;
             var streamReader = new StreamReader(stream);
-            buffer = Encoding.UTF8.GetBytes(streamReader.ReadLine());
+            buffer = Encoding.UTF8.GetBytes(streamReader.ReadLine());*/
 
             if (client.ReceiveBufferSize > 0)
             {
@@ -111,7 +110,7 @@ namespace ProxyServer
                 byte[] remainingBytes = buffer.Skip(bytesToSend)
                     .Take(buffer.Length - bytesToSend)
                   .ToArray();
-                HandleResponseBody(remainingBytes, client, stream);
+                HandleResponseBody(remainingBytes, stream);
             }
 
             /*byte[] recv = new byte[1024];
@@ -131,9 +130,12 @@ namespace ProxyServer
             return dataRead;*/
         }
 
-        private void HandleResponseBody(byte[] remainingBytes, TcpClient client, NetworkStream stream)
+        private void HandleResponseBody(byte[] bytesToSend, NetworkStream stream)
         {
-            throw new NotImplementedException();
+            byte[] buffer = new byte[512];
+            HttpReader bodyReader = new HttpReader(bytesToSend, "\r\n");
+            byte[] getChunkSize = bodyReader.ReadLine();
+
         }
 
         private void SendRequest(NetworkStream stream, string request)
