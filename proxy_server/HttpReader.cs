@@ -7,9 +7,10 @@ namespace ProxyHTTP
 {
     public class HttpReader
     {
-        private byte[] receivedBytes;
+        private const string NewLine = "\r\n";
         private readonly byte[] separator;
         private readonly int usedSize;
+        private byte[] receivedBytes;
 
         public HttpReader(byte[] readBytes, int sizeRead, string lineSeparator)
         {
@@ -41,9 +42,11 @@ namespace ProxyHTTP
             var newBuffer = receivedBytes;
             receivedBytes = receivedBytes.Skip(index).ToArray();
 
-            return newBuffer.Take(usedSize)
-                .Take(index - separator.Length)
-                   .ToArray();
+            return index == 2
+                ? Encoding.UTF8.GetBytes(NewLine)
+                : newBuffer.Take(usedSize)
+                    .Take(index - separator.Length)
+                      .ToArray();
         }
     }
 }

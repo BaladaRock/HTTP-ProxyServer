@@ -97,43 +97,65 @@ namespace ProxyServer
             return message;
         }
 
-        private void HandleResponseHeaders(TcpClient client, NetworkStream stream)
+        private void HandleResponseHeaders(TcpClient browser, NetworkStream stream)
         {
-            byte[] emptyLine = Encoding.UTF8.GetBytes(EmptyLine);
             byte[] newLine = Encoding.UTF8.GetBytes(NewLine);
             byte[] contentHeader = Encoding.UTF8.GetBytes(ContentLength);
-            int bodyLength = 0;
 
             byte[] buffer = new byte[512];
+            string bodyLength = null;
             int readFromStream = stream.Read(buffer, 0, buffer.Length);
+
+            Console.WriteLine(Encoding.UTF8.GetString(buffer));
 
             #region Handle Content-Length
             var readHeaders = new HttpReader(buffer, 512, NewLine);
 
-            var readLine = readHeaders.ReadLine();
+            byte[] readLine = readHeaders.ReadLine();
+            int countHeaderBytes = readLine.Length;
 
-            while (!readLine.SequenceEqual(emptyLine))
+            while (!readLine.SequenceEqual(newLine))
             {
                 var lineChecker = new HttpParser(readLine);
+                Console.WriteLine(Encoding.UTF8.GetString(readLine));
 
                 if (lineChecker.Contains(contentHeader))
                 {
                     int headerTitle = lineChecker.GetPosition(contentHeader);
 
-                    bodyLength = Convert.ToInt32(Encoding.UTF8.GetString(
+                    bodyLength = Encoding.UTF8.GetString(
                         readLine.Skip(headerTitle)
                             .TakeWhile(bytes => bytes != '\r')
-                                .ToArray()));
+                                .ToArray());
                 }
+
+                readLine = readHeaders.ReadLine();
+                countHeaderBytes += readLine.Length + 2;
             }
 
+            int bodyBytes = readFromStream - countHeaderBytes;
 
-            /*  if ()
-              {
-                  HandleContentLength(checkHeaders, stream);
+            SendResponse(browser, buffer.Take(countHeaderBytes).ToArray());
+            SendResponse(browser, buffer.Skip(countHeaderBytes).ToArray());
 
+            if (Convert.ToInt32(bodyLength) > bodyBytes)
+            {
+                int remainigBytes = Convert.ToInt32(bodyLength) - bodyBytes;
 
-              }
+                while (remainigBytes > 512)
+                {
+                    readFromStream = stream.Read(buffer, 0, buffer.Length);
+                    remainigBytes -= readFromStream;
+                    SendResponse(browser, buffer.Take(readFromStream).ToArray());
+                }
+
+                readFromStream = stream.Read(buffer, 0, buffer.Length);
+                SendResponse(browser, buffer.Take(remainigBytes).ToArray());
+            }
+
+            #endregion
+
+            /*  
 
               if (checkHeaders.Contains(emptyLine))
               {
@@ -145,8 +167,6 @@ namespace ProxyServer
                     .ToArray();
                   HandleChunkedBody(remainingBytes, stream);
               }*/
-
-            #endregion
         }
 
         private void HandleContentLength(HttpParser checkHeaders, NetworkStream stream)
@@ -196,6 +216,5 @@ namespace ProxyServer
             string textResponse = Encoding.UTF8.GetString(response);
             Console.WriteLine($"Proxy has sent host response back to browser: {textResponse}");
         }
-
     }
 }
