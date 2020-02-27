@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace ProxyHTTP
@@ -27,7 +26,7 @@ namespace ProxyHTTP
                   .FirstOrDefault(x => x.SequenceEqual(subArray));
 
             return subSets == null
-                ? - 1
+                ? -1
                 : SubArrayIndex(httpResponse, 0, subSets.ToArray()) + wantedLength;
         }
 

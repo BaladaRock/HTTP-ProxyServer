@@ -1,46 +1,49 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Text;
-using ProxyHTTP;
-using System.Globalization;
 
 namespace ProxyHTTP
 {
     public class HttpReader
     {
-        private readonly byte[] receivedBytes;
+        private byte[] receivedBytes;
         private readonly byte[] separator;
-        private int index;
+        private readonly int usedSize;
 
-        public HttpReader(byte[] readBytes, string lineSeparator)
+        public HttpReader(byte[] readBytes, int sizeRead, string lineSeparator)
         {
+            usedSize = sizeRead;
             receivedBytes = readBytes;
             separator = Encoding.UTF8.GetBytes(lineSeparator);
-        }
-
-        public byte[] ReadLine()
-        {
-            var parser = new HttpParser(receivedBytes);
-            index = parser.GetPosition(separator);
-
-            return receivedBytes.Take(index - separator.Length)
-                .ToArray();
-        }
-
-        public byte[] ReadBytes(string line)
-        {
-            int chunkSize = int.Parse(line, NumberStyles.HexNumber);
-
-            return receivedBytes.Skip(index).Take(chunkSize)
-                .ToArray();
         }
 
         public bool IsChunkComplete(byte[] byteLine)
         {
             return byteLine.Skip(byteLine.Length - separator.Length).AsEnumerable()
                    .SequenceEqual(separator);
+        }
+
+        public byte[] ReadBytes(string line)
+        {
+            int chunkSize = int.Parse(line, NumberStyles.HexNumber);
+
+            return receivedBytes.Take(usedSize)
+                .Take(chunkSize)
+                   .ToArray();
+        }
+
+        public byte[] ReadLine()
+        {
+            var parser = new HttpParser(receivedBytes);
+            int index = parser.GetPosition(separator);
+
+            var newBuffer = receivedBytes;
+            receivedBytes = receivedBytes.Skip(index).ToArray();
+
+            return newBuffer.Take(usedSize)
+                .Take(index - separator.Length)
+                   .ToArray();
         }
     }
 }

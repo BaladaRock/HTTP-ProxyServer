@@ -8,6 +8,7 @@ using Xunit;
 
 namespace ProxyHTTP_Facts
 {
+    [System.Runtime.InteropServices.Guid("2E155147-F8BB-4525-B716-1F5CF5263B12")]
     public class HttpReaderFacts
     {
         private const string LineSeparator = "\r\n";
@@ -22,7 +23,7 @@ namespace ProxyHTTP_Facts
 
             // When
             stream.Read(buffer, 0, 11);
-            var chunkReader = new HttpReader(buffer, LineSeparator);
+            var chunkReader = new HttpReader(buffer, 11, LineSeparator);
             byte[] line = chunkReader.ReadLine();
 
             // Then
@@ -40,7 +41,7 @@ namespace ProxyHTTP_Facts
             byte[] buffer = new byte[32];
             stream.Read(buffer, 0, 32);
 
-            var chunkReader = new HttpReader(buffer, LineSeparator);
+            var chunkReader = new HttpReader(buffer, 32, LineSeparator);
 
             // When
             string line = Encoding.UTF8.GetString(chunkReader.ReadLine());
@@ -58,10 +59,10 @@ namespace ProxyHTTP_Facts
             byte[] toCheck = Encoding.UTF8.GetBytes("ab");
 
             MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
-            byte[] buffer = new byte[8];
-            stream.Read(buffer, 0, 8);
+            byte[] buffer = new byte[5];
+            stream.Read(buffer, 0, 5);
 
-            var chunkReader = new HttpReader(buffer, LineSeparator);
+            var chunkReader = new HttpReader(buffer, 5, LineSeparator);
 
             // When
             string line = Encoding.UTF8.GetString(chunkReader.ReadLine());
@@ -70,6 +71,51 @@ namespace ProxyHTTP_Facts
             // Then
             Assert.True(byteLine.SequenceEqual(toCheck));
             Assert.False(chunkReader.IsChunkComplete(byteLine));
+        }
+
+        [Fact]
+        public void Should_Know_That_Buffer_Is_Not_Used_Entirely()
+        {
+            // Given
+            const string data = "3\r\nabc";
+
+            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
+            byte[] buffer = new byte[8];
+            stream.Read(buffer, 0, 5);
+
+            var chunkReader = new HttpReader(buffer, 5, LineSeparator);
+
+            // When
+            string line = Encoding.UTF8.GetString(chunkReader.ReadLine());
+            byte[] byteLine = chunkReader.ReadBytes(line);
+
+            // Then
+            Assert.True(byteLine.SequenceEqual(Encoding.UTF8.GetBytes("ab\0")));
+            Assert.False(chunkReader.IsChunkComplete(byteLine));
+        }
+
+        [Fact]
+        public void Test_LineReader_Should_Do_Multiple_Reads()
+        {
+            // Given
+            const string data = "2b2\r\nabc\r\n3\r\n222\r\n";
+            byte[] toCheck = Encoding.UTF8.GetBytes("222");
+
+            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
+            byte[] buffer = new byte[32];
+            stream.Read(buffer, 0, 32);
+
+            var chunkReader = new HttpReader(buffer, 32, LineSeparator);
+
+            // When
+            chunkReader.ReadLine();
+            chunkReader.ReadLine();
+            string line = Encoding.UTF8.GetString(chunkReader.ReadLine());
+            byte[] byteLine = chunkReader.ReadBytes(line);
+            string test = Encoding.UTF8.GetString(byteLine);
+
+            // Then
+            Assert.True(byteLine.SequenceEqual(toCheck));
         }
     }
 }
