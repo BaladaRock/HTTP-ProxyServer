@@ -46,9 +46,6 @@ namespace ProxyServer
                     SendRequest(stream, request);
 
                     HandleResponseHeaders(client, stream);
-                    /*Console.WriteLine($"Response from host: {Encoding.UTF8.GetString(response)}");
-
-                    SendResponse(client, response);*/
                 }
             }
         }
@@ -72,19 +69,6 @@ namespace ProxyServer
             string message = null;
             byte[] buffer = null;
 
-            /* var httpParser = new HttpParser(buffer);
-
-             while (!httpParser.Contains(Encoding.UTF8.GetBytes("Transfer-Encoding:\nchunked")))
-             {
-                 stream.Read(buffer, 0, buffer.Length);
-                 httpParser = new HttpParser(buffer);
-
-             }
-
-             buffer = null;
-             var streamReader = new StreamReader(stream);
-             buffer = Encoding.UTF8.GetBytes(streamReader.ReadLine());*/
-
             if (client.ReceiveBufferSize > 0)
             {
                 buffer = new byte[client.ReceiveBufferSize];
@@ -100,24 +84,21 @@ namespace ProxyServer
         private void HandleResponseHeaders(TcpClient browser, NetworkStream stream)
         {
             byte[] newLine = Encoding.UTF8.GetBytes(NewLine);
+            byte[] emptyLine = Encoding.UTF8.GetBytes(EmptyLine);
             byte[] contentHeader = Encoding.UTF8.GetBytes(ContentLength);
 
             byte[] buffer = new byte[512];
             string bodyLength = null;
             int readFromStream = stream.Read(buffer, 0, buffer.Length);
 
-            Console.WriteLine(Encoding.UTF8.GetString(buffer));
-
-            #region Handle Content-Length
             var readHeaders = new HttpReader(buffer, 512, NewLine);
 
             byte[] readLine = readHeaders.ReadLine();
             int countHeaderBytes = readLine.Length;
 
-            while (!readLine.SequenceEqual(newLine))
+            while (!readLine.SequenceEqual(emptyLine))
             {
                 var lineChecker = new HttpParser(readLine);
-                Console.WriteLine(Encoding.UTF8.GetString(readLine));
 
                 if (lineChecker.Contains(contentHeader))
                 {
@@ -130,17 +111,19 @@ namespace ProxyServer
                 }
 
                 readLine = readHeaders.ReadLine();
-                countHeaderBytes += readLine.Length + 2;
+                countHeaderBytes += readLine.Length;
             }
+
+    #region Handle Content-Length
 
             int bodyBytes = readFromStream - countHeaderBytes;
 
-            SendResponse(browser, buffer.Take(countHeaderBytes).ToArray());
-            SendResponse(browser, buffer.Skip(countHeaderBytes).ToArray());
+            SendResponse(browser, buffer.Take(readFromStream).ToArray());
+            int totalbodyLength = Convert.ToInt32(bodyLength);
 
-            if (Convert.ToInt32(bodyLength) > bodyBytes)
+            if (totalbodyLength > bodyBytes)
             {
-                int remainigBytes = Convert.ToInt32(bodyLength) - bodyBytes;
+                int remainigBytes = totalbodyLength - bodyBytes;
 
                 while (remainigBytes > 512)
                 {
@@ -149,31 +132,14 @@ namespace ProxyServer
                     SendResponse(browser, buffer.Take(readFromStream).ToArray());
                 }
 
-                readFromStream = stream.Read(buffer, 0, buffer.Length);
-                SendResponse(browser, buffer.Take(remainigBytes).ToArray());
+                readFromStream = stream.Read(buffer, 0, remainigBytes);
+                SendResponse(browser, buffer.Take(readFromStream).ToArray());
             }
 
-            #endregion
-
-            /*  
-
-              if (checkHeaders.Contains(emptyLine))
-              {
-                  int bytesToSend = checkHeaders.GetPosition(emptyLine);
-                  client.GetStream().Write(buffer, 0, bytesToSend);
-
-                  byte[] remainingBytes = buffer.Skip(bytesToSend)
-                      .Take(buffer.Length - bytesToSend)
-                    .ToArray();
-                  HandleChunkedBody(remainingBytes, stream);
-              }*/
-        }
-
-        private void HandleContentLength(HttpParser checkHeaders, NetworkStream stream)
-        {
+    #endregion
 
         }
-
+        
         private void HandleChunkedBody(byte[] bytesToSend, NetworkStream stream)
         {
             byte[] buffer = null;
