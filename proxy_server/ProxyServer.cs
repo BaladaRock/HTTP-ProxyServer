@@ -14,6 +14,8 @@ namespace ProxyServer
         private const string ContentLength = "Content-Length: ";
         private const string EmptyLine = "\r\n\r\n";
         private const string NewLine = "\r\n";
+        private const string ChunkedTransfer = "Transfer-Encoding: ";
+        private const string Chunked = "chunked";
 
         private readonly string proxyIP;
 
@@ -83,90 +85,135 @@ namespace ProxyServer
 
         private void HandleResponseHeaders(TcpClient browser, NetworkStream stream)
         {
-            byte[] newLine = Encoding.UTF8.GetBytes(NewLine);
-            byte[] emptyLine = Encoding.UTF8.GetBytes(EmptyLine);
-            byte[] contentHeader = Encoding.UTF8.GetBytes(ContentLength);
-
-            byte[] buffer = new byte[512];
-            string bodyLength = null;
-            int readFromStream = stream.Read(buffer, 0, buffer.Length);
-
-            var readHeaders = new HttpReader(buffer, 512, NewLine);
-
-            byte[] readLine = readHeaders.ReadLine();
-            int countHeaderBytes = readLine.Length;
-
-            while (!readLine.SequenceEqual(emptyLine))
+            try
             {
-                var lineChecker = new HttpParser(readLine);
 
-                if (lineChecker.Contains(contentHeader))
-                {
-                    int headerTitle = lineChecker.GetPosition(contentHeader);
+                byte[] newLine = Encoding.UTF8.GetBytes(NewLine);
+                byte[] emptyLine = Encoding.UTF8.GetBytes(EmptyLine);
+                byte[] contentHeader = Encoding.UTF8.GetBytes(ContentLength);
+                byte[] chunkedHeader = Encoding.UTF8.GetBytes(ChunkedTransfer);
+                byte[] chunked = Encoding.UTF8.GetBytes(Chunked);
+                byte[] buffer = new byte[512];
+                bool isChunked = false;
+                string bodyLength = null;
 
-                    bodyLength = Encoding.UTF8.GetString(
-                        readLine.Skip(headerTitle)
-                            .TakeWhile(bytes => bytes != '\r')
-                                .ToArray());
-                }
+                int readFromStream = 0;
 
-                readLine = readHeaders.ReadLine();
-                countHeaderBytes += readLine.Length;
-            }
-
-    #region Handle Content-Length
-
-            int bodyBytes = readFromStream - countHeaderBytes;
-
-            SendResponse(browser, buffer.Take(readFromStream).ToArray());
-            int totalbodyLength = Convert.ToInt32(bodyLength);
-
-            if (totalbodyLength > bodyBytes)
-            {
-                int remainigBytes = totalbodyLength - bodyBytes;
-
-                while (remainigBytes > 512)
+                if (stream.CanRead)
                 {
                     readFromStream = stream.Read(buffer, 0, buffer.Length);
-                    remainigBytes -= readFromStream;
+                }
+
+                var readHeaders = new HttpReader(buffer, readFromStream, NewLine);
+
+                byte[] readLine = readHeaders.ReadLine();
+                Console.WriteLine(Encoding.UTF8.GetString(readLine));
+                int countHeaderBytes = readLine.Length;
+
+                while (!readLine.SequenceEqual(emptyLine))
+                {
+                    var lineChecker = new HttpParser(readLine);
+
+                    if (lineChecker.Contains(contentHeader))
+                    {
+                        int headerTitle = lineChecker.GetPosition(contentHeader);
+
+                        bodyLength = Encoding.UTF8.GetString(
+                            readLine.Skip(headerTitle)
+                                .TakeWhile(bytes => bytes != '\r')
+                                    .ToArray());
+                    }
+
+                    if (lineChecker.Contains(chunkedHeader) && lineChecker.Contains(chunked))
+                    {
+                        isChunked = true;
+                    }
+
+                    readLine = readHeaders.ReadLine();
+
+                    string convertedLine = Encoding.UTF8.GetString(readLine);
+                    Console.WriteLine(convertedLine);
+
+                    countHeaderBytes += convertedLine == EmptyLine
+                        ? readLine.Length
+                        : readLine.Length + 2;
+                }
+
+                #region Handle Transfered-Encoding
+                if (isChunked)
+                {
+                    HandleChunkedEncoding(browser, stream, buffer, countHeaderBytes);
+                }
+
+
+                #endregion
+
+
+                #region Handle Content-Length
+
+                int bodyBytes = readFromStream - countHeaderBytes;
+
+                SendResponse(browser, buffer.Take(readFromStream).ToArray());
+                int totalbodyLength = Convert.ToInt32(bodyLength);
+
+                if (totalbodyLength > bodyBytes)
+                {
+                    int remainigBytes = totalbodyLength - bodyBytes;
+
+                    while (remainigBytes > 512)
+                    {
+                        readFromStream = stream.Read(buffer, 0, buffer.Length);
+                        remainigBytes -= readFromStream;
+                        SendResponse(browser, buffer.Take(readFromStream).ToArray());
+                    }
+
+                    readFromStream = stream.Read(buffer, 0, remainigBytes);
                     SendResponse(browser, buffer.Take(readFromStream).ToArray());
                 }
 
-                readFromStream = stream.Read(buffer, 0, remainigBytes);
-                SendResponse(browser, buffer.Take(readFromStream).ToArray());
+                #endregion
+
+                browser.Close();
             }
-
-    #endregion
-
+            catch (Exception exception)
+            {
+                stream?.Close();
+            }
         }
-        
-        private void HandleChunkedBody(byte[] bytesToSend, NetworkStream stream)
+
+        private void HandleChunkedEncoding(TcpClient browser, NetworkStream stream, byte[] buffer, int countHeaderBytes)
         {
-            byte[] buffer = null;
-            int remainderLength = bytesToSend.Length;
+            throw new NotImplementedException();
+           /* SendResponse(browser, buffer.Take(countHeaderBytes).ToArray());
 
-            HttpReader bodyReader = new HttpReader(bytesToSend, remainderLength, NewLine);
+            var chunkReader = new HttpReader
+                (
+                  buffer.Skip(countHeaderBytes).ToArray(),
+                  countHeaderBytes, NewLine
+                );
 
+            byte[] line = chunkReader.ReadLine();
+            string chunkSize = Encoding.UTF8.GetString(line);
 
-            byte[] bytesToRead = bodyReader.ReadLine();
-            if (bodyReader.IsChunkComplete(bytesToRead))
-            {
-                buffer = bodyReader.ReadBytes(Encoding.UTF8.GetString(bytesToRead));
-                byte[] newBuffer = bytesToSend.Skip(Convert.ToInt32(bytesToRead)).ToArray();
-
-                HttpReader newReader = new HttpReader(newBuffer, newBuffer.Length, NewLine);
-                // newReader.ReadLine() =
-            }
-
-            while (bodyReader.ReadLine() != Encoding.UTF8.GetBytes("0"))
+           /* if (!chunkReader.IsChunkComplete(line))
             {
 
             }
 
-            byte[] getChunkSize = bodyReader.ReadLine();
+            int size = Convert.ToInt32(chunkSize);
+            int remainingBytes =
+                    while (size != 0)
+            {
+                if (size > readFromStream - countHeaderBytes)
+                {
+                    byte[] firstBuffer = y
+                            var bufferList = new List<byte[]>()
+                        }
+                byte[] chunk = chunkReader.ReadBytes(chunkSize);
 
-            bodyReader.ReadBytes(Encoding.UTF8.GetString(getChunkSize));
+            }
 
+            byte[] x;*/
         }
 
         private void SendRequest(NetworkStream stream, string request)
