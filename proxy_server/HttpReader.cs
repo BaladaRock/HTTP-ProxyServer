@@ -7,40 +7,41 @@ namespace ProxyHTTP
 {
     public class HttpReader
     {
-        private const string EmptyLine = "\r\n\r\n";
-        private readonly byte[] separator;
-        private byte[] receivedBytes;
+        private byte[] remainingBytes;
 
-        public HttpReader(byte[] readBytes, string lineSeparator)
+        public HttpReader(byte[] readBytes)
         {
-            receivedBytes = readBytes;
-            separator = Encoding.UTF8.GetBytes(lineSeparator);
+            remainingBytes = readBytes;
         }
 
-        public bool IsChunkComplete(byte[] byteLine)
+        public bool IsChunkComplete(byte[] byteLine, string ending, int size = 0)
         {
-            return byteLine.Skip(byteLine.Length - separator.Length).AsEnumerable()
-                   .SequenceEqual(separator);
+            return size != 0
+                ? byteLine.Length == size + ending.Length
+                : Encoding.UTF8.GetString(byteLine).EndsWith(ending);
         }
 
         public byte[] ReadBytes(string line)
         {
             int chunkSize = int.Parse(line, NumberStyles.HexNumber);
-
-            return receivedBytes.Take(chunkSize + Headers.NewLine.Length).ToArray();
+            return remainingBytes.Take(chunkSize + Headers.NewLine.Length).ToArray();
         }
 
-        public byte[] ReadLine()
+        public byte[] ReadLine(string separator)
         {
-            var parser = new HttpParser(receivedBytes);
-            int index = parser.GetPosition(separator);
+            byte[] endLine = Encoding.UTF8.GetBytes(separator);
+            byte[] readLine = null;
 
-            var newBuffer = receivedBytes;
-            receivedBytes = receivedBytes.Skip(index).ToArray();
+            var parser = new HttpParser(remainingBytes);
+            int index = parser.GetPosition(endLine);
 
-            return index == separator.Length
-                ? Encoding.UTF8.GetBytes(EmptyLine)
-                : newBuffer.Take(index).ToArray();
+            if (index != -1)
+            {
+                readLine = remainingBytes.Take(index).ToArray();
+                remainingBytes = remainingBytes.Skip(index).ToArray();
+            }
+
+            return readLine ?? remainingBytes;
         }
     }
 }
