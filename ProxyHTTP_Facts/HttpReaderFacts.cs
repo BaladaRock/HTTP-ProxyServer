@@ -122,7 +122,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_IS_Chunk_Compete_Should_Work_For_Given_Chunk_Size()
+        public void Test_IS_Chunk_Compete_Should_Work_For_Given_Minimum_Chunk_Size()
         {
             // Given
             const string data = "3\r\nabc\r\n2b";

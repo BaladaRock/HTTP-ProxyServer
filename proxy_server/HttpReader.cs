@@ -14,10 +14,10 @@ namespace ProxyHTTP
             remainingBytes = readBytes;
         }
 
-        public bool IsChunkComplete(byte[] byteLine, string ending, int size = 0)
+        public bool IsChunkComplete(byte[] byteLine, string ending, int minimumSize = 0)
         {
-            return size != 0
-                ? byteLine.Length == size + ending.Length
+            return minimumSize != 0
+                ? byteLine.Length >= minimumSize + ending.Length
                 : Encoding.UTF8.GetString(byteLine).EndsWith(ending);
         }
 
