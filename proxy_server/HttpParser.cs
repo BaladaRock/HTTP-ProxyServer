@@ -19,15 +19,11 @@ namespace ProxyHTTP
 
         public int GetPosition(byte[] subArray)
         {
-            int wantedLength = subArray.Length;
+            int position = SubArrayIndex(httpResponse, 0, subArray);
 
-            var subSets = httpResponse.Select((_, index) =>
-                httpResponse.Skip(index).Take(wantedLength))
-                  .FirstOrDefault(x => x.SequenceEqual(subArray));
-
-            return subSets == null
-                ? -1
-                : SubArrayIndex(httpResponse, 0, subSets.ToArray()) + wantedLength;
+            return position == -1
+                ? position
+                : position + subArray.Length;
         }
 
         private int SubArrayIndex(byte[] array, int start, byte[] subArray)
@@ -48,6 +44,7 @@ namespace ProxyHTTP
                     return arrayIndex;
                 }
             }
+
             return -1;
         }
     }

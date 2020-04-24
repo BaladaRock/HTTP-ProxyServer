@@ -1,5 +1,4 @@
-﻿using System;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -30,18 +29,17 @@ namespace ProxyHTTP
         public byte[] ReadLine(string separator)
         {
             byte[] endLine = Encoding.UTF8.GetBytes(separator);
-            byte[] readLine = null;
-
             var parser = new HttpParser(remainingBytes);
             int index = parser.GetPosition(endLine);
 
             if (index != -1)
             {
-                readLine = remainingBytes.Take(index).ToArray();
+                byte[] readLine = remainingBytes.Take(index).ToArray();
                 remainingBytes = remainingBytes.Skip(index).ToArray();
+                return readLine;
             }
 
-            return readLine ?? remainingBytes;
+            return remainingBytes;
         }
     }
 }

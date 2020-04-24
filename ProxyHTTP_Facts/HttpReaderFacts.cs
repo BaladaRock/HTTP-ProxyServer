@@ -57,7 +57,7 @@ namespace ProxyHTTP_Facts
             var chunkReader = new HttpReader(buffer);
 
             // When
-            string line = Encoding.ASCII.GetString(chunkReader.ReadLine(NewLine));
+             string line = Encoding.ASCII.GetString(chunkReader.ReadLine(NewLine));
             // Then
             Assert.Equal("1234", line);
         }

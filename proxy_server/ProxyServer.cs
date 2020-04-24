@@ -37,11 +37,17 @@ namespace ProxyServer
 
                 if (CheckRequest(request))
                 {
-                    string host = GetHost(request);
-                    NetworkStream stream = new TcpClient(host, 80).GetStream();
-
-                    SendRequest(stream, request);
-                    HandleResponse(client, stream);
+                    try
+                    {
+                        string host = GetHost(request);
+                        NetworkStream stream = new TcpClient(host, 80).GetStream();
+                        SendRequest(stream, request);
+                        HandleResponse(client, stream);
+                    }
+                    catch (Exception hostException)
+                    {
+                       //hostName does not exist
+                    }
                 }
             }
         }
@@ -104,7 +110,6 @@ namespace ProxyServer
                     if (lineChecker.Contains(Headers.ContentHeader))
                     {
                         HandleContentLength(browser, stream, buffer, readLine, readFromStream);
-                        break;
                     }
                     else if (lineChecker.Contains(Headers.ChunkedHeader) && lineChecker.Contains(Headers.Chunked))
                     {
@@ -192,7 +197,6 @@ namespace ProxyServer
                              16);
 
                 SendResponse(browser, readLine);
-
                 SendChunkToBrowser(stream, browser, chunkSize, bytes.Skip(lineLength).ToArray());
 
                 bytes = new byte[512];
@@ -202,7 +206,12 @@ namespace ProxyServer
                 chunkLine = Encoding.UTF8.GetString(readLine);
             }
 
-            SendResponse(browser, chunkReader.ReadLine(Headers.NewLine));
+            var endingChunk = chunkReader.ReadLine(Headers.NewLine);
+            SendResponse(browser, endingChunk);
+            if (endingChunk.Length > 2)
+            {
+                SendResponse(browser, chunkReader.ReadLine(Headers.EmptyLine));
+            }
         }
 
         private void SendChunkToBrowser(NetworkStream stream, TcpClient browser, int chunkSize, byte[] bytes)
