@@ -97,7 +97,7 @@ namespace ProxyServer
                     readFromStream = stream.Read(buffer, 0, buffer.Length);
                 }
 
-                var readHeaders = new HttpReader(buffer);
+                var readHeaders = new HttpParser(buffer);
 
                 byte[] readLine = readHeaders.ReadLine(Headers.NewLine);
                 Console.Write(Encoding.UTF8.GetString(readLine));
@@ -176,7 +176,7 @@ namespace ProxyServer
 
         private void HandleChunkedEncoding(TcpClient browser, NetworkStream stream, byte[] bytes)
         {
-            var chunkReader = new HttpReader(bytes);
+            var chunkReader = new HttpParser(bytes);
             byte[] readLine = chunkReader.ReadLine(Headers.NewLine);
             string chunkLine = Encoding.UTF8.GetString(readLine);
 
@@ -187,7 +187,7 @@ namespace ProxyServer
                     var newBytes = new byte[512];
                     int toRead = stream.Read(newBytes, 0, 512);
                     bytes = bytes.Concat(newBytes.Take(toRead)).ToArray();
-                    chunkReader = new HttpReader(bytes);
+                    chunkReader = new HttpParser(bytes);
                     readLine = chunkReader.ReadLine(Headers.NewLine);
                 }
 
@@ -201,7 +201,7 @@ namespace ProxyServer
 
                 bytes = new byte[512];
                 int readFromStream = stream.Read(bytes, 0, 512);
-                chunkReader = new HttpReader(bytes.Take(readFromStream).ToArray());
+                chunkReader = new HttpParser(bytes.Take(readFromStream).ToArray());
                 readLine = chunkReader.ReadLine(Headers.NewLine);
                 chunkLine = Encoding.UTF8.GetString(readLine);
             }
