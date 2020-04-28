@@ -13,14 +13,14 @@ namespace ProxyHTTP
             remainingBytes = readBytes;
         }
 
-        public bool Contains(byte[] subArray)
+        public bool Contains(byte[] array, byte[] subArray)
         {
-            return GetPosition(subArray) != -1;
+            return GetPosition(array, subArray) != -1;
         }
 
-        public int GetPosition(byte[] subArray)
+        public int GetPosition(byte[] array, byte[] subArray)
         {
-            int position = SubArrayIndex(remainingBytes, subArray);
+            int position = SubArrayIndex(array, subArray);
 
             return position == -1
                 ? position
@@ -28,10 +28,39 @@ namespace ProxyHTTP
         }
 
         public (int first, int second) GetPositions(
+             byte[] readLine,
              byte[] firstArray,
              byte[] secondArray)
         {
-            return (GetPosition(firstArray), GetPosition(secondArray));
+            (int , int) indexes = (-1, -1);
+            int firstCount = 0, secondCount = 0;
+
+            for (int index = 0; index < readLine.Length; index++)
+            {
+                if (readLine[index] != firstArray[firstCount++])
+                {
+                    firstCount = 0;
+                }
+
+                if (readLine[index] != secondArray[secondCount++])
+                {
+                    secondCount = 0;
+                }
+
+                if (firstCount == firstArray.Length)
+                {
+                    indexes.Item1 = index - firstCount + 1;
+                }
+
+                if (secondCount == secondArray.Length)
+                {
+                    indexes.Item2 = index - secondCount + 1;
+                }
+            }
+
+            return indexes;
+
+            //return (GetPosition(readLine, firstArray), GetPosition(readLine, secondArray));
         }
 
         public bool IsChunkComplete(byte[] byteLine, string ending, int minimumSize = 0)
@@ -50,7 +79,7 @@ namespace ProxyHTTP
         public byte[] ReadLine(string separator)
         {
             byte[] endLine = Encoding.UTF8.GetBytes(separator);
-            int index = GetPosition(endLine);
+            int index = GetPosition(remainingBytes, endLine);
 
             if (index != -1)
             {
@@ -64,13 +93,22 @@ namespace ProxyHTTP
 
         private int SubArrayIndex(byte[] array, byte[] subArray)
         {
-            int? firstIndex = Enumerable.Range(0, array.Length - subArray.Length + 1)
-              .Cast<int?>().FirstOrDefault(x => array.Skip((int)x)
-                    .Take(subArray.Length).SequenceEqual(subArray));
+            int count = 0;
 
-            return firstIndex != null
-                ? (int)firstIndex
-                : -1;
+            for (int index = 0; index < array.Length; index++)
+            {
+                if (array[index] != subArray[count++])
+                {
+                    count = 0;
+                }
+
+                if (count == subArray.Length)
+                {
+                    return index - count + 1;
+                }
+            }
+
+            return -1;
         }
     }
 }

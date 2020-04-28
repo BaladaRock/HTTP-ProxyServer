@@ -5,6 +5,7 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <StartupObject>ProxyServer.Program</StartupObject>
     <NoWin32Manifest>true</NoWin32Manifest>
+    <LangVersion>7.1</LangVersion>
   </PropertyGroup>
 
 </Project>

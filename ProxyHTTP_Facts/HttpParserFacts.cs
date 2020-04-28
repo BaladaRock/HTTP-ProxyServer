@@ -17,13 +17,14 @@ namespace ProxyHTTP_Facts
         {
             // Given
             const string data = "abcd\r\n\r\nab";
+            const string subArray = "\r\r";
 
             // When
             var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            const string subArray = "\r\r";
+            byte[] readLine = parser.ReadLine(EmptyLine);
 
             // Then
-            Assert.False(parser.Contains(Encoding.UTF8.GetBytes(subArray)));
+            Assert.False(parser.Contains(readLine, Encoding.UTF8.GetBytes(subArray)));
         }
 
         [Fact]
@@ -31,13 +32,30 @@ namespace ProxyHTTP_Facts
         {
             // Given
             const string data = "abcd\r\n\r\nab";
-            const string subArray = "\r\nab";
+            const string subArray = "\nab";
 
             // When
             var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
+            byte[] readLine = parser.ReadLine("\r\n\r\n\r\n");
 
             // Then
-            Assert.True(parser.Contains(Encoding.UTF8.GetBytes(subArray)));
+            Assert.Equal(10, parser.GetPosition(readLine, Encoding.UTF8.GetBytes(subArray)));
+            Assert.True(parser.Contains(readLine, Encoding.UTF8.GetBytes(subArray)));
+        }
+
+        [Fact]
+        public void Test_GetPosition_SubArray_Is_At_The_End()
+        {
+            // Given
+            const string data = "abcd";
+            const string subArray = "cd";
+
+            // When
+            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
+            byte[] readLine = parser.ReadLine(NewLine);
+
+            // Then
+            Assert.Equal(4, parser.GetPosition(readLine, Encoding.UTF8.GetBytes(subArray)));
         }
 
         [Fact]
@@ -48,28 +66,30 @@ namespace ProxyHTTP_Facts
 
             // When
             var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
+            byte[] readLine = parser.ReadLine(EmptyLine);
 
             // Then
-            Assert.True(parser.Contains(Encoding.UTF8.GetBytes(EmptyLine)));
+            Assert.True(parser.Contains(readLine, Headers.EmptyLineByte));
         }
 
         [Fact]
-        public void Test_Give_Position_Array_Has_More_SubArrays()
+        public void Test_GetPosition_Array_Has_More_SubArrays()
         {
             // Given
-            const string data = "bcbcababab";
+            const string data = "bcbcababab\r\n";
             const string subArray = "ab";
 
             // When
             var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
+            byte[] readLine = parser.ReadLine(NewLine);
+            int position = parser.GetPosition(readLine, Encoding.UTF8.GetBytes(subArray));
 
             // Then
             Assert.Equal(6, position);
         }
 
         [Fact]
-        public void Test_Give_Position_for_EMPTY_LINE()
+        public void Test_GetPosition_for_EMPTY_LINE()
         {
             // Given
             const string data = "abcd\r\n\r\nab";
@@ -77,14 +97,15 @@ namespace ProxyHTTP_Facts
 
             // When
             var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
+            byte[] readLine = parser.ReadLine("A");
+            int position = parser.GetPosition(readLine, Encoding.UTF8.GetBytes(subArray));
 
             // Then
             Assert.Equal(8, position);
         }
 
         [Fact]
-        public void Test_Give_Position_Should_Take_the_ENTIRE_SUBARRAY()
+        public void Test_GetPosition_Should_Take_the_ENTIRE_SUBARRAY()
         {
             // Given
             const string data = "abefabcd";
@@ -92,14 +113,15 @@ namespace ProxyHTTP_Facts
 
             // When
             var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
+            byte[] readLine = parser.ReadLine(EmptyLine);
+            int position = parser.GetPosition(readLine, Encoding.UTF8.GetBytes(subArray));
 
             // Then
             Assert.Equal(8, position);
         }
 
         [Fact]
-        public void Test_Give_Position_SubArray_Is_At_Start()
+        public void Test_GetPosition_SubArray_Is_At_Start()
         {
             // Given
             const string data = "abbcababab";
@@ -107,14 +129,15 @@ namespace ProxyHTTP_Facts
 
             // When
             var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
+            byte[] readLine = parser.ReadLine(EmptyLine);
+            int position = parser.GetPosition(readLine, Encoding.UTF8.GetBytes(subArray));
 
             //Then
             Assert.Equal(2, position);
         }
 
         [Fact]
-        public void Test_Give_Positions_SimpleCase()
+        public void Test_GetPositions_SimpleCase()
         {
             // Given
             byte[] array = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
@@ -123,15 +146,18 @@ namespace ProxyHTTP_Facts
 
             // When
             var parser = new HttpParser(array);
-            parser.ReadLine(EmptyLine);
-            (int first, int second) indexes = parser.GetPositions(firstSubArray, secondSubArray);
+            var readLine = parser.ReadLine(EmptyLine);
+            (int first, int second) indexes = parser.GetPositions(
+                readLine,
+                firstSubArray,
+                secondSubArray);
 
             // Then
             Assert.Equal((2, 5), indexes);
         }
 
         [Fact]
-        public void Test_Give_Positions_Should_Work_When_Reading_From_MemoryStream()
+        public void Test_GetPositions_Should_Work_When_Reading_From_MemoryStream()
         {
             // Given
             const string data = "3\r\nabc\r\n";
@@ -144,8 +170,9 @@ namespace ProxyHTTP_Facts
 
             // When
             var parser = new HttpParser(buffer);
-            parser.ReadLine(EmptyLine);
+            byte[] readLine = parser.ReadLine(EmptyLine);
             (int first, int second) indexes = parser.GetPositions(
+                    readLine,
                     Encoding.UTF8.GetBytes(first),
                     Encoding.UTF8.GetBytes(second));
             // Then
@@ -153,7 +180,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_Give_Positions_Should_Work_When_One_SubSet_was_NOT_found()
+        public void Test_GetPositions_Should_Work_When_One_SubSet_was_NOT_found()
         {
             // Given
             const string data = "3\r\nabc\r\n";
@@ -166,8 +193,9 @@ namespace ProxyHTTP_Facts
 
             // When
             var parser = new HttpParser(buffer);
-            parser.ReadLine(EmptyLine);
+            var readLine = parser.ReadLine(EmptyLine);
             (int first, int second) indexes = parser.GetPositions(
+                    readLine,
                     Encoding.UTF8.GetBytes(first),
                     Encoding.UTF8.GetBytes(second));
             // Then
@@ -175,7 +203,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_Give_Positions_Should_Work_When_Both_SubSet_were_NOT_found()
+        public void Test_GetPositions_Should_Work_When_Both_SubSet_were_NOT_found()
         {
             // Given
             const string data = "3\r\nabc\r\n";
@@ -188,8 +216,9 @@ namespace ProxyHTTP_Facts
 
             // When
             var parser = new HttpParser(buffer);
-            parser.ReadLine(EmptyLine);
+            var readLine = parser.ReadLine(EmptyLine);
             (int first, int second) indexes = parser.GetPositions(
+                    readLine,
                     Encoding.UTF8.GetBytes(first),
                     Encoding.UTF8.GetBytes(second));
             // Then
@@ -197,7 +226,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_Give_Positions_Should_Work_For_More_Complex_Case()
+        public void Test_GetPositions_Should_Work_For_More_Complex_Case()
         {
             // Given
             const string data = "3\r\nabc\r\nadd";
@@ -210,8 +239,9 @@ namespace ProxyHTTP_Facts
 
             // When
             var parser = new HttpParser(buffer);
-            parser.ReadLine(EmptyLine);
+            var readLine = parser.ReadLine(EmptyLine);
             (int first, int second) indexes = parser.GetPositions(
+                    readLine,
                     Encoding.UTF8.GetBytes(first),
                     Encoding.UTF8.GetBytes(second));
             // Then
@@ -226,14 +256,14 @@ namespace ProxyHTTP_Facts
             MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
             byte[] buffer = new byte[10];
             stream.Read(buffer, 0, 10);
-            var chunkReader = new HttpParser(buffer);
+            var parser = new HttpParser(buffer);
 
             // When
-            string line = Encoding.UTF8.GetString(chunkReader.ReadLine(NewLine));
-            byte[] byteLine = chunkReader.ReadBytes(line);
+            string line = Encoding.UTF8.GetString(parser.ReadLine(NewLine));
+            byte[] byteLine = parser.ReadBytes(line);
             int size = Convert.ToInt32(line);
             // Then
-            Assert.True(chunkReader.IsChunkComplete(byteLine, NewLine, size));
+            Assert.True(parser.IsChunkComplete(byteLine, NewLine, size));
         }
 
         [Fact]

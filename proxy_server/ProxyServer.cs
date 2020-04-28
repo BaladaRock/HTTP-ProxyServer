@@ -105,13 +105,12 @@ namespace ProxyServer
                 while (!readLine.SequenceEqual(Headers.NewLineByte))
                 {
                     countHeaderBytes += readLine.Length;
-                    var lineChecker = new HttpParser(readLine);
 
-                    if (lineChecker.Contains(Headers.ContentHeader))
+                    if (readHeaders.Contains(readLine, Headers.ContentHeader))
                     {
                         HandleContentLength(browser, stream, buffer, readLine, readFromStream);
                     }
-                    else if (lineChecker.Contains(Headers.ChunkedHeader) && lineChecker.Contains(Headers.Chunked))
+                    else if (readHeaders.Contains(readLine, Headers.ChunkedHeader) && readHeaders.Contains(readLine, Headers.Chunked))
                     {
                         isChunked = true;
                     }
@@ -142,15 +141,16 @@ namespace ProxyServer
 
         private void HandleContentLength(TcpClient browser, NetworkStream stream, byte[] buffer, byte[] contentLine, int readFromStream)
         {
-            int headerTitle = new HttpParser(contentLine).GetPosition(Headers.ContentHeader);
+            int headerTitle = new HttpParser(contentLine).GetPosition(contentLine, Headers.ContentHeader);
 
             int bodyLength = Convert.ToInt32(Encoding.UTF8.GetString(
                             contentLine.Skip(headerTitle)
                                 .TakeWhile(bytes => bytes != '\r')
                                     .ToArray()));
 
-            int headerBytes = new HttpParser(buffer.Take(readFromStream).ToArray())
-                .GetPosition(Headers.EmptyLineByte);
+            byte[] readBytes = buffer.Take(readFromStream).ToArray();
+            int headerBytes = new HttpParser(readBytes)
+                .GetPosition(readBytes, Headers.EmptyLineByte);
             int remainingBytes = readFromStream - headerBytes;
 
             if (remainingBytes > bodyLength)
