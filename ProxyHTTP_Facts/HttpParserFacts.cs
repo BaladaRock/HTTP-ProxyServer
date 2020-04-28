@@ -1,4 +1,7 @@
 using ProxyHTTP;
+using System;
+using System.IO;
+using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -6,82 +9,11 @@ namespace ProxyHTTP_Facts
 {
     public class HttpParserFacts
     {
-        [Fact]
-        public void Should_Correctly_Give_Position_Array_Has_More_SubArrays()
-        {
-            // Given
-            const string data = "bcbcababab";
-
-            // When
-            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            const string subArray = "ab";
-            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
-
-            // Then
-            Assert.Equal(6, position);
-        }
+        private const string EmptyLine = Headers.EmptyLine;
+        private const string NewLine = Headers.NewLine;
 
         [Fact]
-        public void Should_Correctly_Give_Position_Final_Test()
-        {
-            // Given
-            const string data = "abbcababab";
-
-            // When
-            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            const string subArray = "ab";
-            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
-
-            //Then
-            Assert.Equal(2, position);
-        }
-
-        [Fact]
-        public void Should_Correctly_Give_Position_Of_EMPTY_LINE()
-        {
-            // Given
-            const string data = "abcd\r\n\r\nab";
-
-            // When
-            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            const string subArray = "\r\n\r\n";
-            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
-
-            // Then
-            Assert.Equal(8, position);
-        }
-
-        [Fact]
-        public void Test_Give_Position_Should_Take_the_ENTIRE_SUBARRAY()
-        {
-            // Given
-            const string data = "abefabcd";
-
-            // When
-            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            const string subArray = "abcd";
-            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
-
-            // Then
-            Assert.Equal(8, position);
-        }
-
-        [Fact]
-        public void Should_Know_If_A_Response_Contains_EMPTY_LINE()
-        {
-            // Given
-            const string data = "abcd\r\n\r\nab";
-
-            // When
-            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            const string subArray = "\r\n\r\n";
-
-            // Then
-            Assert.True(parser.Contains(Encoding.UTF8.GetBytes(subArray)));
-        }
-
-        [Fact]
-        public void Should_Return_FALSE_Array_DoesNot_Contain_SubArray()
+        public void Test_Contains_Method_Array_Does_NOT_Contain_SubArray()
         {
             // Given
             const string data = "abcd\r\n\r\nab";
@@ -95,17 +27,359 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Should_Return_TRUE_SubArray_is_at_THE_END()
+        public void Test_Contains_Method_SubArray_is_at_THE_END()
+        {
+            // Given
+            const string data = "abcd\r\n\r\nab";
+            const string subArray = "\r\nab";
+
+            // When
+            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
+
+            // Then
+            Assert.True(parser.Contains(Encoding.UTF8.GetBytes(subArray)));
+        }
+
+        [Fact]
+        public void Test_ContainsMethod_Should_Know_If_A_Response_Contains_EMPTY_LINE()
         {
             // Given
             const string data = "abcd\r\n\r\nab";
 
             // When
             var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            const string subArray = "\r\nab";
 
             // Then
-            Assert.True(parser.Contains(Encoding.UTF8.GetBytes(subArray)));
+            Assert.True(parser.Contains(Encoding.UTF8.GetBytes(EmptyLine)));
+        }
+
+        [Fact]
+        public void Test_Give_Position_Array_Has_More_SubArrays()
+        {
+            // Given
+            const string data = "bcbcababab";
+            const string subArray = "ab";
+
+            // When
+            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
+            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
+
+            // Then
+            Assert.Equal(6, position);
+        }
+
+        [Fact]
+        public void Test_Give_Position_for_EMPTY_LINE()
+        {
+            // Given
+            const string data = "abcd\r\n\r\nab";
+            const string subArray = "\r\n\r\n";
+
+            // When
+            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
+            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
+
+            // Then
+            Assert.Equal(8, position);
+        }
+
+        [Fact]
+        public void Test_Give_Position_Should_Take_the_ENTIRE_SUBARRAY()
+        {
+            // Given
+            const string data = "abefabcd";
+            const string subArray = "abcd";
+
+            // When
+            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
+            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
+
+            // Then
+            Assert.Equal(8, position);
+        }
+
+        [Fact]
+        public void Test_Give_Position_SubArray_Is_At_Start()
+        {
+            // Given
+            const string data = "abbcababab";
+            const string subArray = "ab";
+
+            // When
+            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
+            int position = parser.GetPosition(Encoding.UTF8.GetBytes(subArray));
+
+            //Then
+            Assert.Equal(2, position);
+        }
+
+        [Fact]
+        public void Test_Give_Positions_SimpleCase()
+        {
+            // Given
+            byte[] array = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+            byte[] firstSubArray = new byte[] { 1, 2 };
+            byte[] secondSubArray = new byte[] { 3, 4, 5 };
+
+            // When
+            var parser = new HttpParser(array);
+            parser.ReadLine(EmptyLine);
+            (int first, int second) indexes = parser.GetPositions(firstSubArray, secondSubArray);
+
+            // Then
+            Assert.Equal((2, 5), indexes);
+        }
+
+        [Fact]
+        public void Test_Give_Positions_Should_Work_When_Reading_From_MemoryStream()
+        {
+            // Given
+            const string data = "3\r\nabc\r\n";
+            const string first = "\r\nab";
+            const string second = "3";
+
+            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
+            byte[] buffer = new byte[8];
+            stream.Read(buffer, 0, 8);
+
+            // When
+            var parser = new HttpParser(buffer);
+            parser.ReadLine(EmptyLine);
+            (int first, int second) indexes = parser.GetPositions(
+                    Encoding.UTF8.GetBytes(first),
+                    Encoding.UTF8.GetBytes(second));
+            // Then
+            Assert.Equal((5, 1), indexes);
+        }
+
+        [Fact]
+        public void Test_Give_Positions_Should_Work_When_One_SubSet_was_NOT_found()
+        {
+            // Given
+            const string data = "3\r\nabc\r\n";
+            const string first = "\r\nab";
+            const string second = "22";
+
+            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
+            byte[] buffer = new byte[8];
+            stream.Read(buffer, 0, 8);
+
+            // When
+            var parser = new HttpParser(buffer);
+            parser.ReadLine(EmptyLine);
+            (int first, int second) indexes = parser.GetPositions(
+                    Encoding.UTF8.GetBytes(first),
+                    Encoding.UTF8.GetBytes(second));
+            // Then
+            Assert.Equal((5, -1), indexes);
+        }
+
+        [Fact]
+        public void Test_Give_Positions_Should_Work_When_Both_SubSet_were_NOT_found()
+        {
+            // Given
+            const string data = "3\r\nabc\r\n";
+            const string first = "100";
+            const string second = "22";
+
+            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
+            byte[] buffer = new byte[8];
+            stream.Read(buffer, 0, 8);
+
+            // When
+            var parser = new HttpParser(buffer);
+            parser.ReadLine(EmptyLine);
+            (int first, int second) indexes = parser.GetPositions(
+                    Encoding.UTF8.GetBytes(first),
+                    Encoding.UTF8.GetBytes(second));
+            // Then
+            Assert.Equal((-1, -1), indexes);
+        }
+
+        [Fact]
+        public void Test_Give_Positions_Should_Work_For_More_Complex_Case()
+        {
+            // Given
+            const string data = "3\r\nabc\r\nadd";
+            const string first = "\r\n";
+            const string second = "\r\nabc";
+
+            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
+            byte[] buffer = new byte[12];
+            stream.Read(buffer, 0, 12);
+
+            // When
+            var parser = new HttpParser(buffer);
+            parser.ReadLine(EmptyLine);
+            (int first, int second) indexes = parser.GetPositions(
+                    Encoding.UTF8.GetBytes(first),
+                    Encoding.UTF8.GetBytes(second));
+            // Then
+            Assert.Equal((3, 6), indexes);
+        }
+
+        [Fact]
+        public void Test_IS_Chunk_Compete_Should_Work_For_Given_Minimum_Chunk_Size()
+        {
+            // Given
+            const string data = "3\r\nabc\r\n2b";
+            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
+            byte[] buffer = new byte[10];
+            stream.Read(buffer, 0, 10);
+            var chunkReader = new HttpParser(buffer);
+
+            // When
+            string line = Encoding.UTF8.GetString(chunkReader.ReadLine(NewLine));
+            byte[] byteLine = chunkReader.ReadBytes(line);
+            int size = Convert.ToInt32(line);
+            // Then
+            Assert.True(chunkReader.IsChunkComplete(byteLine, NewLine, size));
+        }
+
+        [Fact]
+        public void Test_IS_Chunk_Compete_Should_Work_For_Simple_Case()
+        {
+            // Given
+            const string data = "12345";
+            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
+            byte[] buffer = new byte[5];
+            stream.Read(buffer, 0, 5);
+            var chunkReader = new HttpParser(buffer);
+
+            // When
+            byte[] byteLine = chunkReader.ReadBytes("5\r\n");
+
+            // When, Then
+            Assert.False(chunkReader.IsChunkComplete(byteLine, NewLine));
+        }
+
+        [Fact]
+        public void Test_Read_Bytes_From_ReadLine_Value_Buffer_Has_More_Elements()
+        {
+            // Given
+            const string data = "3\r\nabc\r\naaaaa";
+            byte[] toCheck = Encoding.UTF8.GetBytes("abc\r\n");
+
+            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
+            byte[] buffer = new byte[24];
+            stream.Read(buffer, 0, 24);
+
+            var chunkReader = new HttpParser(buffer);
+
+            // When
+            string line = Encoding.UTF8.GetString(chunkReader.ReadLine(NewLine));
+            byte[] byteLine = chunkReader.ReadBytes(line);
+
+            // Then
+            Assert.True(byteLine.SequenceEqual(toCheck));
+        }
+
+        [Fact]
+        public void Test_Read_Bytes_Should_Read_correctly_for_ReadValue()
+        {
+            // Given
+            const string data = "3\r\nabc\r\n";
+            byte[] toCheck = Encoding.UTF8.GetBytes("abc\r\n");
+
+            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
+            byte[] buffer = new byte[8];
+            stream.Read(buffer, 0, 8);
+
+            var chunkReader = new HttpParser(buffer);
+
+            // When
+            string line = Encoding.UTF8.GetString(chunkReader.ReadLine(NewLine));
+            byte[] byteLine = chunkReader.ReadBytes(line);
+
+            // Then
+            Assert.True(byteLine.SequenceEqual(toCheck));
+        }
+
+        [Fact]
+        public void Test_ReadBytes_Should_Work_Correctly_for_MULTIPLE_Reads()
+        {
+            // Given
+            const string data = "2b2\r\n\r\n\r\n3\r\n222\r\n";
+            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
+            byte[] buffer = new byte[32];
+
+            // When
+            stream.Read(buffer, 0, 32);
+            var chunkReader = new HttpParser(buffer);
+            chunkReader.ReadLine(NewLine);
+            chunkReader.ReadLine(EmptyLine);
+            string line = Encoding.UTF8.GetString(chunkReader.ReadLine(NewLine));
+            string byteLine = Encoding.UTF8.GetString(chunkReader.ReadBytes(line));
+
+            // Then
+            Assert.Equal("222\r\n", byteLine);
+        }
+
+        [Fact]
+        public void Test_ReadLine_Should_Correctly_ReadLine_For_EmptyLINE()
+        {
+            // Given
+            const string data = "\r\n\r\n";
+            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(data));
+            byte[] buffer = new byte[8];
+            stream.Read(buffer, 0, 4);
+            var chunkReader = new HttpParser(buffer);
+
+            // When
+            string line = Encoding.UTF8.GetString(chunkReader.ReadLine(EmptyLine));
+
+            // Then
+            Assert.Equal(data, line);
+        }
+
+        [Fact]
+        public void Test_ReadLine_Should_Correctly_ReadLine_More_Complex_Case()
+        {
+            // Given
+            const string data = "23\r\n\r\n\r\n2345";
+            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(data));
+            byte[] buffer = new byte[12];
+            stream.Read(buffer, 0, 12);
+            var chunkReader = new HttpParser(buffer);
+
+            // When
+            chunkReader.ReadLine(NewLine);
+            chunkReader.ReadLine(EmptyLine);
+            // Then
+            Assert.Equal("2345", Encoding.ASCII.GetString(chunkReader.ReadLine(NewLine)));
+        }
+
+        [Fact]
+        public void Test_ReadLine_Should_Correctly_ReadLine_Separator_Has_Not_Been_Found()
+        {
+            // Given
+            const string data = "1234";
+            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(data));
+            byte[] buffer = new byte[4];
+            stream.Read(buffer, 0, 4);
+            var chunkReader = new HttpParser(buffer);
+
+            // When
+            string line = Encoding.ASCII.GetString(chunkReader.ReadLine(NewLine));
+            // Then
+            Assert.Equal("1234", line);
+        }
+
+        [Fact]
+        public void Test_ReadLine_Should_Read_LeadingLine_For_EmptyLine_Separator()
+        {
+            // Given
+            const string data = "322345\r\n\r\nab";
+            var stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
+            byte[] buffer = new byte[12];
+
+            // When
+            stream.Read(buffer, 0, 12);
+            var chunkReader = new HttpParser(buffer);
+            byte[] line = chunkReader.ReadLine(EmptyLine);
+
+            // Then
+            Assert.Equal("322345\r\n\r\n", Encoding.UTF8.GetString(line));
         }
     }
 }
