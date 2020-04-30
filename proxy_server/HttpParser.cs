@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -8,14 +9,36 @@ namespace ProxyHTTP
     {
         private byte[] remainingBytes;
 
-        public HttpParser(byte[] readBytes)
+        public HttpParser(byte[] buffer)
         {
-            remainingBytes = readBytes;
+            remainingBytes = buffer;
+        }
+
+        public bool Check(byte[] readLine, byte[] first, byte[] second = null)
+        {
+            bool checkFirst = Contains(readLine, first);
+
+            if (second != null)
+            {
+                return checkFirst && Contains(readLine, second);
+            }
+
+            return checkFirst;
         }
 
         public bool Contains(byte[] array, byte[] subArray)
         {
             return GetPosition(array, subArray) != -1;
+        }
+
+        public int GetContentLength(byte[] readLine)
+        {
+            int headerTitle = GetPosition(readLine, Headers.ContentHeader);
+
+            return Convert.ToInt32(Encoding.UTF8.GetString(
+                            readLine.Skip(headerTitle)
+                                .TakeWhile(bytes => bytes != '\r')
+                                    .ToArray()));
         }
 
         public int GetPosition(byte[] array, byte[] subArray)
