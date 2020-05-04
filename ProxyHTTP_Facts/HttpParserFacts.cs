@@ -44,21 +44,6 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_GetPosition_SubArray_Is_At_The_End()
-        {
-            // Given
-            const string data = "abcd";
-            const string subArray = "cd";
-
-            // When
-            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            byte[] readLine = parser.ReadLine(NewLine);
-
-            // Then
-            Assert.Equal(4, parser.GetPosition(readLine, Encoding.UTF8.GetBytes(subArray)));
-        }
-
-        [Fact]
         public void Test_ContainsMethod_Should_Know_If_A_Response_Contains_EMPTY_LINE()
         {
             // Given
@@ -69,7 +54,7 @@ namespace ProxyHTTP_Facts
             byte[] readLine = parser.ReadLine(EmptyLine);
 
             // Then
-            Assert.True(parser.Contains(readLine, Headers.EmptyLineByte));
+            Assert.True(parser.Contains(readLine, Headers.EmptyLineBytes));
         }
 
         [Fact]
@@ -137,115 +122,18 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_GetPositions_SimpleCase()
+        public void Test_GetPosition_SubArray_Is_At_The_End()
         {
             // Given
-            byte[] array = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-            byte[] firstSubArray = new byte[] { 1, 2 };
-            byte[] secondSubArray = new byte[] { 3, 4, 5 };
+            const string data = "abcd";
+            const string subArray = "cd";
 
             // When
-            var parser = new HttpParser(array);
-            var readLine = parser.ReadLine(EmptyLine);
-            (int first, int second) indexes = parser.GetPositions(
-                readLine,
-                firstSubArray,
-                secondSubArray);
+            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
+            byte[] readLine = parser.ReadLine(NewLine);
 
             // Then
-            Assert.Equal((2, 5), indexes);
-        }
-
-        [Fact]
-        public void Test_GetPositions_Should_Work_When_Reading_From_MemoryStream()
-        {
-            // Given
-            const string data = "3\r\nabc\r\n";
-            const string first = "\r\nab";
-            const string second = "3";
-
-            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
-            byte[] buffer = new byte[8];
-            stream.Read(buffer, 0, 8);
-
-            // When
-            var parser = new HttpParser(buffer);
-            byte[] readLine = parser.ReadLine(EmptyLine);
-            (int first, int second) indexes = parser.GetPositions(
-                    readLine,
-                    Encoding.UTF8.GetBytes(first),
-                    Encoding.UTF8.GetBytes(second));
-            // Then
-            Assert.Equal((5, 1), indexes);
-        }
-
-        [Fact]
-        public void Test_GetPositions_Should_Work_When_One_SubSet_was_NOT_found()
-        {
-            // Given
-            const string data = "3\r\nabc\r\n";
-            const string first = "\r\nab";
-            const string second = "22";
-
-            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
-            byte[] buffer = new byte[8];
-            stream.Read(buffer, 0, 8);
-
-            // When
-            var parser = new HttpParser(buffer);
-            var readLine = parser.ReadLine(EmptyLine);
-            (int first, int second) indexes = parser.GetPositions(
-                    readLine,
-                    Encoding.UTF8.GetBytes(first),
-                    Encoding.UTF8.GetBytes(second));
-            // Then
-            Assert.Equal((5, -1), indexes);
-        }
-
-        [Fact]
-        public void Test_GetPositions_Should_Work_When_Both_SubSet_were_NOT_found()
-        {
-            // Given
-            const string data = "3\r\nabc\r\n";
-            const string first = "100";
-            const string second = "22";
-
-            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
-            byte[] buffer = new byte[8];
-            stream.Read(buffer, 0, 8);
-
-            // When
-            var parser = new HttpParser(buffer);
-            var readLine = parser.ReadLine(EmptyLine);
-            (int first, int second) indexes = parser.GetPositions(
-                    readLine,
-                    Encoding.UTF8.GetBytes(first),
-                    Encoding.UTF8.GetBytes(second));
-            // Then
-            Assert.Equal((-1, -1), indexes);
-        }
-
-        [Fact]
-        public void Test_GetPositions_Should_Work_For_More_Complex_Case()
-        {
-            // Given
-            const string data = "3\r\nabc\r\nadd";
-            const string first = "\r\n";
-            const string second = "\r\nabc";
-
-            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
-            byte[] buffer = new byte[12];
-            stream.Read(buffer, 0, 12);
-
-            // When
-            var parser = new HttpParser(buffer);
-            var readLine = parser.ReadLine(EmptyLine);
-            (int first, int second) indexes = parser.GetPositions(
-                    readLine,
-                    Encoding.UTF8.GetBytes(first),
-                    Encoding.UTF8.GetBytes(second));
-            // Then
-            Assert.Equal((3, 6), indexes);
+            Assert.Equal(4, parser.GetPosition(readLine, Encoding.UTF8.GetBytes(subArray)));
         }
 
         [Fact]

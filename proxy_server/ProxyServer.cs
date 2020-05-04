@@ -81,29 +81,73 @@ namespace ProxyServer
             return message;
         }
 
+        private string GetString(byte[] readLine)
+        {
+            return Encoding.UTF8.GetString(readLine);
+        }
+
         private void HandleChunked(TcpClient browser, NetworkStream stream, byte[] bytes)
         {
-            bytes = ReadAndSendBytes(
+            var read = ReadAndSendBytes(
                 browser,
                 stream,
                 bytes,
                 new HttpParser(bytes),
                 Headers.EmptyLine);
 
-            bytes = ReadAndSendBytes(
+            var parser = new HttpParser(read.remainder);
+            byte[] readLine = parser.ReadLine(Headers.NewLine);
+            string chunkLine = GetString(readLine);
+
+            while (chunkLine != Headers.ZeroChunk)
+            {
+                SendChunkToBrowser(
+                   stream,
+                   browser,
+                   Convert.ToInt32(chunkLine.Substring(0, chunkLine.Length - 2), 16),
+                   read.remainder.Skip(readLine.Length).ToArray());
+
+                bytes = new byte[512];
+                int readFromStream = stream.Read(bytes, 0, 512);
+                parser = new HttpParser(bytes.Take(readFromStream).ToArray());
+                readLine = parser.ReadLine(Headers.NewLine);
+                chunkLine = Encoding.UTF8.GetString(readLine);
+            }
+
+           /* read = ReadAndSendBytes(
                browser,
                stream,
-               bytes,
-               new HttpParser(bytes),
+               read.remainder,
+               new HttpParser(read.remainder),
                Headers.NewLine);
 
+            string chunkLine = GetString(read.readLine);
+            while (chunkLine != Headers.ZeroChunk)
+            {
+                SendChunkToBrowser(
+                    stream,
+                    browser,
+                    Convert.ToInt32(chunkLine.Substring(0, chunkLine.Length - 2), 16),
+                    read.remainder);
 
+                bytes = new byte[512];
+                int readFromStream = stream.Read(bytes, 0, bytes.Length);
 
-            var chunkReader = new HttpParser(bytes);
+                read = ReadAndSendBytes(
+                browser,
+                stream,
+                bytes.Take(readFromStream).ToArray(),
+                new HttpParser(bytes.Take(readFromStream).ToArray()),
+                Headers.NewLine);
+
+                chunkLine = GetString(read.readLine);
+            }*/
+
+                /* var chunkReader = new HttpParser(bytes);
             byte[] readLine = chunkReader.ReadLine(Headers.NewLine);
             string chunkLine = Encoding.UTF8.GetString(readLine);
 
-            /*while (chunkLine != Headers.ZeroChunk)
+            while (chunkLine != Headers.ZeroChunk)
             {
                 while (!chunkReader.IsChunkComplete(readLine, Headers.NewLine, 3))
                 {
@@ -148,34 +192,9 @@ namespace ProxyServer
                 stream,
                 buffer,
                 new HttpParser(buffer),
-                Headers.EmptyLine);
+                Headers.EmptyLine).remainder;
 
-            SendChunkToBrowser(
-                stream,
-                browser,
-                bodyLength,
-                buffer.ToArray());
-        }
-
-        private byte[] ReadAndSendBytes(
-            TcpClient browser,
-            NetworkStream stream,
-            byte[] buffer,
-            HttpParser parser,
-            string separator)
-        {
-            byte[] readLine = parser.ReadLine(separator);
-
-            while (readLine.Length == buffer.Length)
-            {
-                SendResponse(browser, readLine);
-                int readFromStream = stream.Read(buffer, 0, buffer.Length);
-                parser = new HttpParser(buffer.Take(readFromStream).ToArray());
-                readLine = parser.ReadLine(separator);
-            }
-
-            SendResponse(browser, readLine);
-            return buffer.Skip(readLine.Length).ToArray();
+            SendChunkToBrowser(stream, browser, bodyLength, buffer.ToArray());
         }
 
         private void HandleResponse(TcpClient browser, NetworkStream stream)
@@ -231,12 +250,12 @@ namespace ProxyServer
 
         private List<byte[]> MakeBufferList(NetworkStream stream, int chunkSize, byte[] bytes)
         {
-            int readFromStream = 0, bytesLength = 512;
-            var listElement = new byte[bytesLength];
-            int listSize = (chunkSize / bytesLength) + 1;
+            int readFromStream = 0, bufferLength = 512;
+            var listElement = new byte[bufferLength];
+            int listSize = (chunkSize / bufferLength) + 1;
             List<byte[]> bufferList = new List<byte[]>(listSize);
 
-            if (chunkSize <= bytesLength)
+            if (chunkSize <= bufferLength)
             {
                 bufferList.Add(bytes.Take(chunkSize).ToArray());
                 return bufferList;
@@ -246,18 +265,39 @@ namespace ProxyServer
                 bufferList.Add(bytes);
             }
 
-            int remainingBytes = chunkSize - bytesLength;
-            while (remainingBytes > bytesLength)
+            int remainingBytes = chunkSize - bytes.Length;
+            while (remainingBytes > bufferLength)
             {
-                readFromStream = stream.Read(listElement, 0, bytesLength);
+                readFromStream = stream.Read(listElement, 0, bufferLength);
                 bufferList.Add(listElement.Take(readFromStream).ToArray());
-                remainingBytes -= bytesLength;
+                remainingBytes -= bufferLength;
             }
 
-            readFromStream = stream.Read(listElement, 0, remainingBytes + 2);
+            readFromStream = stream.Read(listElement, 0, remainingBytes);
             bufferList.Add(listElement.Take(readFromStream).ToArray());
 
             return bufferList;
+        }
+
+        private (byte[] remainder, byte[] readLine) ReadAndSendBytes(
+                            TcpClient browser,
+            NetworkStream stream,
+            byte[] buffer,
+            HttpParser parser,
+            string separator)
+        {
+            byte[] readLine = parser.ReadLine(separator);
+
+            while (readLine.Length == buffer.Length)
+            {
+                SendResponse(browser, readLine);
+                int readFromStream = stream.Read(buffer, 0, buffer.Length);
+                parser = new HttpParser(buffer.Take(readFromStream).ToArray());
+                readLine = parser.ReadLine(separator);
+            }
+
+            SendResponse(browser, readLine);
+            return (buffer.Skip(readLine.Length).ToArray(), readLine);
         }
 
         private void SendChunkToBrowser(NetworkStream stream, TcpClient browser, int chunkSize, byte[] bytes)

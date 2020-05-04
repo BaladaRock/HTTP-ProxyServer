@@ -17,7 +17,7 @@ namespace ProxyHTTP
 
         internal static byte[] ContentHeader => GetBytes("Content-Length: ");
 
-        internal static byte[] EmptyLineByte => GetBytes(EmptyLine);
+        internal static byte[] EmptyLineBytes => GetBytes(EmptyLine);
 
         internal static byte[] NewLineByte => GetBytes(NewLine);
 
