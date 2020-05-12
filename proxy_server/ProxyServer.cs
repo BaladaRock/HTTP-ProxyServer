@@ -199,6 +199,9 @@ namespace ProxyServer
 
         private void HandleResponse(TcpClient browser, NetworkStream stream)
         {
+            var handleHeaders = new HeadersReader((IStreamReader)stream);
+            byte[] headers = handleHeaders.ReadHeaders();
+
             byte[] buffer = new byte[512];
             int readFromStream = 0;
             int countHeaderBytes = 0;
