@@ -1,11 +1,11 @@
-using ProxyHTTP;
+using ProxyServer;
 using System;
 using System.IO;
 using System.Linq;
 using System.Text;
 using Xunit;
 
-namespace ProxyHTTP_Facts
+namespace ProxyServer_Facts
 {
     public class HttpParserFacts
     {

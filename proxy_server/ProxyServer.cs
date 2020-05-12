@@ -1,5 +1,4 @@
-﻿using ProxyHTTP;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -199,7 +198,7 @@ namespace ProxyServer
 
         private void HandleResponse(TcpClient browser, NetworkStream stream)
         {
-            var handleHeaders = new HeadersReader((IStreamReader)stream);
+            var handleHeaders = new HeadersReader(stream as IStreamReader);
             byte[] headers = handleHeaders.ReadHeaders();
 
             byte[] buffer = new byte[512];

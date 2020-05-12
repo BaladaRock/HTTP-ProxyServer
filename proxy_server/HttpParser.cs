@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-namespace ProxyHTTP
+namespace ProxyServer
 {
     public class HttpParser
     {

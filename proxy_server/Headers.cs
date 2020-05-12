@@ -3,7 +3,7 @@ using System.Text;
 
 [assembly: InternalsVisibleTo("ProxyHTTP_Facts")]
 
-namespace ProxyHTTP
+namespace ProxyServer
 {
     internal static class Headers
     {

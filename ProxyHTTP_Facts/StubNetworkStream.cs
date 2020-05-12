@@ -1,20 +1,42 @@
 ﻿using ProxyServer;
+using System;
+using System.Text;
 
-namespace ProxyHTTP_Facts
+namespace ProxyServer_Facts
 {
     internal class StubNetworkStream : IStreamReader
     {
-        private string data;
+        private byte[] bytes;
 
-        public StubNetworkStream(string data)
+        internal StubNetworkStream(string data)
         {
-            this.data = data;
-
+            Data = data;
+            bytes = Encoding.UTF8.GetBytes(Data);
         }
+
+        internal string Data { get; set; }
 
         public int Read(byte[] buffer, int offset, int size)
         {
-            throw new System.NotImplementedException();
+            if (size - offset > buffer.Length)
+            {
+                throw new ArgumentOutOfRangeException(
+                    paramName: nameof(offset));
+            }
+
+            int count = 0;
+
+            for(int i = offset; i < size; i++)
+            {
+                buffer[i] = bytes[count++];
+
+                if (count == bytes.Length)
+                {
+                    return count;
+                }
+            }
+
+            return count;
         }
     }
 }
