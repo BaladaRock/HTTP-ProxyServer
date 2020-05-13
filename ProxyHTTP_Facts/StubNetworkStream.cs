@@ -29,13 +29,9 @@ namespace ProxyServer_Facts
             for(int i = offset; i < size; i++)
             {
                 buffer[i] = bytes[count++];
-
-                if (count == bytes.Length)
-                {
-                    return count;
-                }
             }
 
+            bytes
             return count;
         }
     }
