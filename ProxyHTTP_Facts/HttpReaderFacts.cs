@@ -39,10 +39,10 @@ namespace ProxyServer_Facts
         }
 
         [Fact]
-        public void Test_Read_Method_Line_Does_NOT_Contain_Separator()
+        public void Test_Read_Method_First_StreamRead_Does_NOT_Contain_Separator()
         {
             //Given
-            const string data = "12345678abcdefgh";
+            const string data = "12345678abc\r\n\r\nandrei";
             var stream = new StubNetworkStream(data);
 
             //When
@@ -50,7 +50,7 @@ namespace ProxyServer_Facts
             byte[] headers = reader.ReadHeaders();
 
             //Then
-            Assert.Equal("12345678", Encoding.UTF8.GetString(headers));
+            Assert.Equal("12345678abc\r\n\r\n", Encoding.UTF8.GetString(headers));
         }
     }
 }
