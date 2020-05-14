@@ -10,26 +10,30 @@ namespace ProxyServer
         private byte[] buffer;
         private int readFromStream;
 
-        private int size;
-
         public HeadersReader(IStreamReader stream, int size)
         {
-            networkStream = stream;
-            this.size = size;
             readFromStream = 0;
+            networkStream = stream;
             buffer = new byte[size];
         }
 
-        public void ReadFromStream()
+        public void ReadFromStream(int position)
         {
-            readFromStream = networkStream.Read(buffer, 0, size);
+            readFromStream = networkStream.Read(buffer, position, buffer.Length);
         }
 
         public byte[] ReadHeaders()
         {
-            ReadFromStream();
+            ReadFromStream(0);
 
             var parser = new HttpParser(buffer);
+            while (parser.GetPosition(buffer, Headers.EmptyLineBytes) == -1)
+            {
+                buffer = buffer.Concat(new byte[readFromStream]).ToArray();
+                ReadFromStream(readFromStream);
+                readFromStream += readFromStream;
+            }
+
             return buffer.Take(readFromStream)
                 .Take(parser.GetPosition(buffer, Headers.EmptyLineBytes))
                   .ToArray();
