@@ -7,11 +7,13 @@ namespace ProxyServer_Facts
 {
     internal class StubNetworkStream : IStreamReader
     {
-        private byte[] bytes;
+        private readonly byte[] bytes;
+        private int count;
 
         internal StubNetworkStream(string data)
         {
             Data = data;
+            count = 0;
             bytes = Encoding.UTF8.GetBytes(Data);
         }
 
@@ -21,14 +23,11 @@ namespace ProxyServer_Facts
         {
             ThrowReadExceptions(buffer, offset, size);
 
-            int count = 0;
-
             for (int i = offset; i < size; i++)
             {
                 buffer[i] = bytes[count++];
             }
 
-            bytes = bytes.Skip(count).ToArray();
             return count;
         }
 
