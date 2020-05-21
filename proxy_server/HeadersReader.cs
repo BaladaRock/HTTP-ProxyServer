@@ -1,13 +1,14 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 namespace ProxyServer
 {
     public class HeadersReader
     {
+        private readonly int bufferSize;
         private readonly IStreamReader networkStream;
         private byte[] buffer;
         private int position;
-        private int bufferSize;
         private int readFromStream;
 
         public HeadersReader(IStreamReader stream, int size)
@@ -31,25 +32,22 @@ namespace ProxyServer
         public byte[] ReadHeaders()
         {
             ReadFromStream(0);
-            int newBufferSize = bufferSize;
 
             var parser = new HttpParser(buffer);
             position = parser.GetPosition(buffer, Headers.EmptyLineBytes);
             while (position == -1)
             {
-                ReadBytes(newBufferSize);
-                newBufferSize += bufferSize;
+                ReadAndResizeBuffer();
                 position = parser.GetPosition(buffer, Headers.EmptyLineBytes);
             }
 
             return buffer.Take(position).ToArray();
         }
 
-        private void ReadBytes(int bufferSize)
+        private void ReadAndResizeBuffer()
         {
-            buffer = buffer.Concat(new byte[bufferSize]).ToArray();
-            ReadFromStream(buffer.Length / 2);
-           // buffer = buffer.Take(readFromStream).ToArray();
+            Array.Resize(ref buffer, buffer.Length + bufferSize);
+            ReadFromStream(buffer.Length - bufferSize);
         }
     }
 }
