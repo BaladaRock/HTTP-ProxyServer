@@ -74,6 +74,22 @@ namespace ProxyServer_Facts
         }
 
         [Fact]
+        public void Test_GetRemainder_Should_Return_NULL_After_Multiple_Reads()
+        {
+            //Given
+            const string data = "1234nandrei\r\n\r\n";
+            var stream = new StubNetworkStream(data);
+
+            //When
+            var reader = new HeadersReader(stream, Eight);
+            reader.ReadHeaders();
+            byte[] remainder = reader.GetRemainder();
+
+            //Then
+            Assert.Null(remainder);
+        }
+
+        [Fact]
         public void Test_GetRemainder_Should_Return_Null_When_Separator_Is_Not_Found()
         {
             //Given
@@ -86,7 +102,7 @@ namespace ProxyServer_Facts
             byte[] remainder = reader.GetRemainder();
 
             //Then
-            Assert.Null(Encoding.UTF8.GetString(remainder));
+            Assert.Null(remainder);
         }
 
         [Fact]
@@ -101,7 +117,7 @@ namespace ProxyServer_Facts
             byte[] remainder = reader.ReadHeaders();
 
             //Then
-            Assert.Null(Encoding.UTF8.GetString(remainder));
+            Assert.Null(remainder);
         }
 
         [Fact]

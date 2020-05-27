@@ -1,6 +1,5 @@
 ﻿using ProxyServer;
 using System;
-using System.Linq;
 using System.Text;
 
 namespace ProxyServer_Facts
@@ -8,12 +7,12 @@ namespace ProxyServer_Facts
     internal class StubNetworkStream : IStreamReader
     {
         private readonly byte[] bytes;
-        private int count;
+        private int bytesPosition;
 
         internal StubNetworkStream(string data)
         {
             Data = data;
-            count = 0;
+            bytesPosition = 0;
             bytes = Encoding.UTF8.GetBytes(Data);
         }
 
@@ -23,12 +22,19 @@ namespace ProxyServer_Facts
         {
             ThrowReadExceptions(buffer, offset, size);
 
+            int readBytes = 0;
             for (int i = offset; i < size; i++)
             {
-                buffer[i] = bytes[count++];
+                if (i >= bytes.Length)
+                {
+                    return readBytes;
+                }
+
+                buffer[i] = bytes[bytesPosition++];
+                readBytes++;
             }
 
-            return count;
+            return readBytes;
         }
 
         private static void ThrowReadExceptions(byte[] buffer, int offset, int size)
