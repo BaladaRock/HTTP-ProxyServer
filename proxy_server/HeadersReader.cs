@@ -5,38 +5,35 @@ namespace ProxyServer
 {
     public class HeadersReader
     {
+        private readonly int bufferSize;
         private readonly IStreamReader networkStream;
         private byte[] buffer;
+        private int position;
+        private int readFromStream;
 
         public HeadersReader(IStreamReader stream, int size)
         {
-            ReadFromStream = 0;
+            readFromStream = 0;
             networkStream = stream;
-            BufferSize = size;
-            buffer = new byte[BufferSize];
+            bufferSize = size;
+            buffer = new byte[bufferSize];
         }
-
-        private int BufferSize { get; }
-
-        private int Position { get; set; }
-
-        private int ReadFromStream { get; set; }
 
         public byte[] GetRemainder()
         {
-            return ReadFromStream == 0 || Position == buffer.Length - 1
+            return readFromStream == 0 || position == buffer.Length - 1
                 ? (default)
-                : buffer.Skip(Position).ToArray();
+                : buffer.Skip(position).ToArray();
         }
 
         public byte[] ReadHeaders()
         {
-            ReadBytes(0);
+            ReadFromStream(0);
 
             var parser = new HttpParser(buffer);
-            while (GetEmptyLinePosition(parser) == -1)
+            while (UpdatePosition(parser) == -1)
             {
-                if (ReadFromStream == 0)
+                if (readFromStream == 0)
                 {
                     return default;
                 }
@@ -44,24 +41,24 @@ namespace ProxyServer
                 ReadAndResizeBuffer();
             }
 
-            return buffer.Take(Position).ToArray();
-        }
-
-        private int GetEmptyLinePosition(HttpParser parser)
-        {
-            Position = parser.GetPosition(buffer, Headers.EmptyLineBytes);
-            return Position;
+            return buffer.Take(position).ToArray();
         }
 
         private void ReadAndResizeBuffer()
         {
-            Array.Resize(ref buffer, buffer.Length + BufferSize);
-            ReadBytes(buffer.Length - BufferSize);
+            Array.Resize(ref buffer, buffer.Length + bufferSize);
+            ReadFromStream(buffer.Length - bufferSize);
         }
 
-        private void ReadBytes(int position)
+        private void ReadFromStream(int position)
         {
-            ReadFromStream = networkStream.Read(buffer, position, buffer.Length);
+            readFromStream = networkStream.Read(buffer, position, buffer.Length);
+        }
+
+        private int UpdatePosition(HttpParser parser)
+        {
+            position = parser.GetPosition(buffer, Headers.EmptyLineBytes);
+            return position;
         }
     }
 }
