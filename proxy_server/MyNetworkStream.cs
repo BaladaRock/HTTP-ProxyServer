@@ -3,7 +3,7 @@ using System.Net.Sockets;
 
 namespace ProxyServer
 {
-    public class MyNetworkStream : IStreamReader
+    public class MyNetworkStream : INetworkStream
     {
         private readonly NetworkStream networkStream;
 

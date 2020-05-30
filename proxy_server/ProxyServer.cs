@@ -113,135 +113,115 @@ namespace ProxyServer
                 chunkLine = Encoding.UTF8.GetString(readLine);
             }
 
-           /* read = ReadAndSendBytes(
-               browser,
-               stream,
-               read.remainder,
-               new HttpParser(read.remainder),
-               Headers.NewLine);
-
-            string chunkLine = GetString(read.readLine);
-            while (chunkLine != Headers.ZeroChunk)
-            {
-                SendChunkToBrowser(
-                    stream,
-                    browser,
-                    Convert.ToInt32(chunkLine.Substring(0, chunkLine.Length - 2), 16),
-                    read.remainder);
-
-                bytes = new byte[512];
-                int readFromStream = stream.Read(bytes, 0, bytes.Length);
-
-                read = ReadAndSendBytes(
+            /* read = ReadAndSendBytes(
                 browser,
                 stream,
-                bytes.Take(readFromStream).ToArray(),
-                new HttpParser(bytes.Take(readFromStream).ToArray()),
+                read.remainder,
+                new HttpParser(read.remainder),
                 Headers.NewLine);
 
-                chunkLine = GetString(read.readLine);
-            }*/
+             string chunkLine = GetString(read.readLine);
+             while (chunkLine != Headers.ZeroChunk)
+             {
+                 SendChunkToBrowser(
+                     stream,
+                     browser,
+                     Convert.ToInt32(chunkLine.Substring(0, chunkLine.Length - 2), 16),
+                     read.remainder);
 
-                /* var chunkReader = new HttpParser(bytes);
-            byte[] readLine = chunkReader.ReadLine(Headers.NewLine);
-            string chunkLine = Encoding.UTF8.GetString(readLine);
+                 bytes = new byte[512];
+                 int readFromStream = stream.Read(bytes, 0, bytes.Length);
 
-            while (chunkLine != Headers.ZeroChunk)
+                 read = ReadAndSendBytes(
+                 browser,
+                 stream,
+                 bytes.Take(readFromStream).ToArray(),
+                 new HttpParser(bytes.Take(readFromStream).ToArray()),
+                 Headers.NewLine);
+
+                 chunkLine = GetString(read.readLine);
+             }*/
+
+            /* var chunkReader = new HttpParser(bytes);
+        byte[] readLine = chunkReader.ReadLine(Headers.NewLine);
+        string chunkLine = Encoding.UTF8.GetString(readLine);
+
+        while (chunkLine != Headers.ZeroChunk)
+        {
+            while (!chunkReader.IsChunkComplete(readLine, Headers.NewLine, 3))
             {
-                while (!chunkReader.IsChunkComplete(readLine, Headers.NewLine, 3))
-                {
-                    var newBytes = new byte[512];
-                    int toRead = stream.Read(newBytes, 0, 512);
-                    bytes = bytes.Concat(newBytes.Take(toRead)).ToArray();
-                    chunkReader = new HttpParser(bytes);
-                    readLine = chunkReader.ReadLine(Headers.NewLine);
-                }
-
-                int lineLength = readLine.Length;
-                int chunkSize = Convert.ToInt32(
-                             chunkLine.Substring(0, lineLength - 2),
-                             16);
-
-                SendResponse(browser, readLine);
-                SendChunkToBrowser(stream, browser, chunkSize, bytes.Skip(lineLength).ToArray());
-
-                bytes = new byte[512];
-                int readFromStream = stream.Read(bytes, 0, 512);
-                chunkReader = new HttpParser(bytes.Take(readFromStream).ToArray());
+                var newBytes = new byte[512];
+                int toRead = stream.Read(newBytes, 0, 512);
+                bytes = bytes.Concat(newBytes.Take(toRead)).ToArray();
+                chunkReader = new HttpParser(bytes);
                 readLine = chunkReader.ReadLine(Headers.NewLine);
-                chunkLine = Encoding.UTF8.GetString(readLine);
             }
 
-            var endingChunk = chunkReader.ReadLine(Headers.NewLine);
-            SendResponse(browser, endingChunk);
-            if (endingChunk.Length > 2)
-            {
-                SendResponse(browser, chunkReader.ReadLine(Headers.EmptyLine));
-            }*/
+            int lineLength = readLine.Length;
+            int chunkSize = Convert.ToInt32(
+                         chunkLine.Substring(0, lineLength - 2),
+                         16);
+
+            SendResponse(browser, readLine);
+            SendChunkToBrowser(stream, browser, chunkSize, bytes.Skip(lineLength).ToArray());
+
+            bytes = new byte[512];
+            int readFromStream = stream.Read(bytes, 0, 512);
+            chunkReader = new HttpParser(bytes.Take(readFromStream).ToArray());
+            readLine = chunkReader.ReadLine(Headers.NewLine);
+            chunkLine = Encoding.UTF8.GetString(readLine);
+        }
+
+        var endingChunk = chunkReader.ReadLine(Headers.NewLine);
+        SendResponse(browser, endingChunk);
+        if (endingChunk.Length > 2)
+        {
+            SendResponse(browser, chunkReader.ReadLine(Headers.EmptyLine));
+        }*/
         }
 
         private void HandleContentLength(
             TcpClient browser,
             NetworkStream stream,
-            byte[] buffer,
+            byte[] bodyPart,
             int bodyLength)
         {
-            buffer = ReadAndSendBytes(
+            var contentHandler = new ContentLength(stream, bodyPart, bodyLength);
+            contentHandler.HandleResponseBody(browser);
+
+            /*buffer = ReadAndSendBytes(
                 browser,
                 stream,
-                buffer,
-                new HttpParser(buffer),
+                bodyPart,
+                new HttpParser(bodyPart),
                 Headers.EmptyLine).remainder;
 
-            SendChunkToBrowser(stream, browser, bodyLength, buffer.ToArray());
+            SendChunkToBrowser(stream, browser, bodyLength, bodyPart.ToArray());*/
         }
 
         private void HandleResponse(TcpClient browser, NetworkStream stream)
         {
-            var myStream = new MyNetworkStream(stream);
-            var handleHeaders = new HeadersReader(myStream, 512);
-            byte[] headers = handleHeaders.ReadHeaders();
-            byte[] remainder = handleHeaders.GetRemainder();
-
-            byte[] buffer = new byte[512];
-            int readFromStream = 0;
-            int countHeaderBytes = 0;
-
             try
             {
-                if (stream.CanRead)
+                var handleHeaders = new HeadersReader(new MyNetworkStream(stream), 512);
+                byte[] headers = handleHeaders.ReadHeaders();
+                byte[] remainder = handleHeaders.GetRemainder();
+                SendResponse(browser, headers);
+
+                var checkHeaders = new HttpParser(headers);
+                int contentPosition = checkHeaders.GetPosition(headers, Headers.ContentHeader);
+                if (contentPosition != -1)
                 {
-                    readFromStream = stream.Read(buffer, 0, buffer.Length);
+                    HandleContentLength(
+                        browser,
+                        stream,
+                        remainder,
+                        checkHeaders.GetContentLength(headers.Skip(contentPosition).ToArray())
+                        );
                 }
-
-                var responseReader = new HttpParser(buffer);
-                byte[] readLine = responseReader.ReadLine(Headers.NewLine);
-
-                while (!readLine.SequenceEqual(Headers.NewLineByte))
+                else if (checkHeaders.Contains(headers, Headers.Chunked))
                 {
-                    SendResponse(browser, readLine);
-                    countHeaderBytes += readLine.Length;
-
-                    if (responseReader.Check(readLine, Headers.ContentHeader))
-                    {
-                        int bodyLength = responseReader.GetContentLength(readLine);
-                        HandleContentLength(
-                            browser,
-                            stream,
-                            buffer.Skip(countHeaderBytes).Take(readFromStream - countHeaderBytes).ToArray(),
-                            bodyLength);
-                        break;
-                    }
-                    else if (responseReader.Check(readLine, Headers.ChunkedHeader, Headers.Chunked))
-                    {
-                        HandleChunked(
-                            browser,
-                            stream,
-                            buffer.Skip(countHeaderBytes).Take(readFromStream - countHeaderBytes).ToArray());
-                        break;
-                    }
-
-                    readLine = responseReader.ReadLine(Headers.NewLine);
+                    HandleChunked(browser, stream, remainder);
                 }
 
                 browser.Close();
@@ -318,9 +298,9 @@ namespace ProxyServer
             Console.WriteLine($"Proxy has sent request to host: {request}");
         }
 
-        private void SendResponse(TcpClient browserClient, byte[] response)
+        private void SendResponse(TcpClient browser, byte[] response)
         {
-            browserClient.Client.Send(response);
+            browser.Client.Send(response);
 
             string textResponse = Encoding.UTF8.GetString(response);
             Console.WriteLine($"Proxy has sent host response back to browser: {textResponse}");

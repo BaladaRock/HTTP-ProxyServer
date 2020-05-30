@@ -1,6 +1,6 @@
 ﻿namespace ProxyServer
 {
-    public interface IStreamReader
+    public interface INetworkStream
     {
         int Read(byte[] buffer, int offset, int size);
     }

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ProxyServer_Facts
 {
-    internal class StubNetworkStream : IStreamReader
+    internal class StubNetworkStream : INetworkStream
     {
         private readonly byte[] bytes;
         private int bytesPosition;

@@ -6,12 +6,12 @@ namespace ProxyServer
     public class HeadersReader
     {
         private readonly int bufferSize;
-        private readonly IStreamReader networkStream;
+        private readonly INetworkStream networkStream;
         private byte[] buffer;
         private int position;
         private int readFromStream;
 
-        public HeadersReader(IStreamReader stream, int size)
+        public HeadersReader(INetworkStream stream, int size)
         {
             readFromStream = 0;
             networkStream = stream;
@@ -31,7 +31,7 @@ namespace ProxyServer
             ReadFromStream(0);
 
             var parser = new HttpParser(buffer);
-            while (UpdatePosition(parser) == -1)
+            while (GetEmptyLinePosition(parser) == -1)
             {
                 if (readFromStream == 0)
                 {
@@ -55,7 +55,7 @@ namespace ProxyServer
             readFromStream = networkStream.Read(buffer, position, buffer.Length);
         }
 
-        private int UpdatePosition(HttpParser parser)
+        private int GetEmptyLinePosition(HttpParser parser)
         {
             position = parser.GetPosition(buffer, Headers.EmptyLineBytes);
             return position;

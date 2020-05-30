@@ -69,7 +69,7 @@ namespace ProxyServer
             return remainingBytes;
         }
 
-        internal bool Contains(byte[] array, byte[] subArray)
+        public bool Contains(byte[] array, byte[] subArray)
         {
             return GetPosition(array, subArray) != -1;
         }
