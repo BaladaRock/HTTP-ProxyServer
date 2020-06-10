@@ -2,7 +2,7 @@
 using System;
 using System.Text;
 
-namespace ProxyServer_Facts
+namespace ProxyHTTP_Facts
 {
     internal class StubNetworkStream : INetworkStream
     {
@@ -17,6 +17,8 @@ namespace ProxyServer_Facts
         }
 
         internal string Data { get; set; }
+
+        internal byte[] GetWrittenBytes { get; set; }
 
         public int Read(byte[] buffer, int offset, int size)
         {
@@ -35,6 +37,11 @@ namespace ProxyServer_Facts
             }
 
             return readBytes;
+        }
+
+        public void Write(byte[] buffer, int offset, int size)
+        {
+            throw new NotImplementedException();
         }
 
         private static void ThrowReadExceptions(byte[] buffer, int offset, int size)

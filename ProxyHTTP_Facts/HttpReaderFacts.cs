@@ -1,8 +1,9 @@
 ﻿using ProxyServer;
+using System.Collections.Generic;
 using System.Text;
 using Xunit;
 
-namespace ProxyServer_Facts
+namespace ProxyHTTP_Facts
 {
     public class HttpReaderFacts
     {

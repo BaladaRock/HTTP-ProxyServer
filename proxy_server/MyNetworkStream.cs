@@ -17,5 +17,10 @@ namespace ProxyServer
         {
             return networkStream.Read(buffer, offset, size);
         }
+
+        public void Write(byte[] buffer, int offset, int size)
+        {
+            networkStream.Write(buffer, offset, size);
+        }
     }
 }

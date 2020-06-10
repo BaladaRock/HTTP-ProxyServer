@@ -181,13 +181,16 @@ namespace ProxyServer
         }
 
         private void HandleContentLength(
-            TcpClient browser,
             NetworkStream stream,
             byte[] bodyPart,
             int bodyLength)
         {
-            var contentHandler = new ContentLength(stream, bodyPart, bodyLength);
-            contentHandler.HandleResponseBody(browser);
+            var contentHandler = new ContentLength(
+                new MyNetworkStream(stream),
+                bodyPart,
+                bodyLength);
+
+            contentHandler.HandleResponseBody();
 
             /*buffer = ReadAndSendBytes(
                 browser,
@@ -213,7 +216,6 @@ namespace ProxyServer
                 if (contentPosition != -1)
                 {
                     HandleContentLength(
-                        browser,
                         stream,
                         remainder,
                         checkHeaders.GetContentLength(headers.Skip(contentPosition).ToArray())
