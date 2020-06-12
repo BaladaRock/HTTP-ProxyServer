@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net.Sockets;
 
 namespace ProxyServer
@@ -21,8 +22,15 @@ namespace ProxyServer
         internal void HandleResponseBody()
         {
             byte[] buffer = new byte[bodyLength];
-            int read = serverStream.Read(buffer, 0, buffer.Length);
-            browserStream.Write(buffer, 0, read);
+            int bodyPartSize = 0;
+            if (bodyPart != null)
+            {
+                bodyPartSize = bodyPart.Length;
+                browserStream.Write(bodyPart, 0, bodyPart.Length);
+            }
+
+            int read = serverStream.Read(buffer, 0, buffer.Length - bodyPartSize);
+            browserStream.Write(buffer.Take(read).ToArray(), 0, read);
         }
     }
 }

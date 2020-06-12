@@ -104,5 +104,21 @@ namespace ProxyHTTP_Facts
             Assert.Equal("abcd123456", Encoding.UTF8.GetString(writtenToStream));
         }
 
+        [Fact]
+        public void Test_Larger_Value_Should_Work_Correctly_For_Repetitive_StreamCalls()
+        {
+            //Given
+            byte[] body = Encoding.UTF8.GetBytes("abcd");
+            var stream = new StubNetworkStream("123456789abcdefghijklmno");
+            var contentHandler = new ContentLength(stream, stream, body, 25);
+
+            //When
+            contentHandler.HandleResponseBody();
+            byte[] writtenToStream = stream.GetWrittenBytes;
+
+            //Then
+            Assert.Equal("abcd123456789abcdefghijkl", Encoding.UTF8.GetString(writtenToStream));
+        }
+
     }
 }
