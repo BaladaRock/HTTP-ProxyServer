@@ -181,12 +181,14 @@ namespace ProxyServer
         }
 
         private void HandleContentLength(
-            NetworkStream stream,
+            NetworkStream serverStream,
+            NetworkStream browserStream,
             byte[] bodyPart,
             int bodyLength)
         {
             var contentHandler = new ContentLength(
-                new MyNetworkStream(stream),
+                new MyNetworkStream(serverStream),
+                new MyNetworkStream(browserStream),
                 bodyPart,
                 bodyLength);
 
@@ -202,11 +204,13 @@ namespace ProxyServer
             SendChunkToBrowser(stream, browser, bodyLength, bodyPart.ToArray());*/
         }
 
-        private void HandleResponse(TcpClient browser, NetworkStream stream)
+        private void HandleResponse(TcpClient browser, NetworkStream serverStream)
         {
             try
             {
-                var handleHeaders = new HeadersReader(new MyNetworkStream(stream), 512);
+                NetworkStream browserStream = browser.GetStream();
+
+                var handleHeaders = new HeadersReader(new MyNetworkStream(serverStream), 512);
                 byte[] headers = handleHeaders.ReadHeaders();
                 byte[] remainder = handleHeaders.GetRemainder();
                 SendResponse(browser, headers);
@@ -216,21 +220,22 @@ namespace ProxyServer
                 if (contentPosition != -1)
                 {
                     HandleContentLength(
-                        stream,
+                        serverStream,
+                        browserStream,
                         remainder,
                         checkHeaders.GetContentLength(headers.Skip(contentPosition).ToArray())
                         );
                 }
                 else if (checkHeaders.Contains(headers, Headers.Chunked))
                 {
-                    HandleChunked(browser, stream, remainder);
+                    HandleChunked(browser, serverStream, remainder);
                 }
 
                 browser.Close();
             }
             catch (Exception exception)
             {
-                stream?.Close();
+                serverStream?.Close();
             }
         }
 

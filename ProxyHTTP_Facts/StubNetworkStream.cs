@@ -1,24 +1,24 @@
 ﻿using ProxyServer;
 using System;
+using System.Linq;
 using System.Text;
 
 namespace ProxyHTTP_Facts
 {
     internal class StubNetworkStream : INetworkStream
     {
-        private readonly byte[] bytes;
+        private readonly byte[] streamBytes;
+        private byte[] writtenToStream;
         private int bytesPosition;
 
         internal StubNetworkStream(string data)
         {
-            Data = data;
+            writtenToStream = null;
             bytesPosition = 0;
-            bytes = Encoding.UTF8.GetBytes(Data);
+            streamBytes = Encoding.UTF8.GetBytes(data);
         }
 
-        internal string Data { get; set; }
-
-        internal byte[] GetWrittenBytes { get; set; }
+        internal byte[] GetWrittenBytes => writtenToStream;
 
         public int Read(byte[] buffer, int offset, int size)
         {
@@ -27,12 +27,12 @@ namespace ProxyHTTP_Facts
             int readBytes = 0;
             for (int i = offset; i < size; i++)
             {
-                if (i >= bytes.Length)
+                if (i >= streamBytes.Length)
                 {
                     return readBytes;
                 }
 
-                buffer[i] = bytes[bytesPosition++];
+                buffer[i] = streamBytes[bytesPosition++];
                 readBytes++;
             }
 
@@ -41,7 +41,20 @@ namespace ProxyHTTP_Facts
 
         public void Write(byte[] buffer, int offset, int size)
         {
-            throw new NotImplementedException();
+            if (size == 0)
+            {
+                return;
+            }
+
+            byte[] sessionBytes = new byte[buffer.Length];
+            for (int i = offset; i < size; i++)
+            {
+               sessionBytes[i] = buffer[i];
+            }
+
+            writtenToStream = writtenToStream == null
+                ? sessionBytes
+                : writtenToStream.Concat(sessionBytes).ToArray();
         }
 
         private static void ThrowReadExceptions(byte[] buffer, int offset, int size)
