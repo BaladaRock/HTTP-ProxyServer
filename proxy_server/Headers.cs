@@ -1,7 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Text;
-
-[assembly: InternalsVisibleTo("ProxyHTTP_Facts")]
+﻿using System.Text;
 
 namespace ProxyServer
 {

@@ -8,7 +8,7 @@ namespace ProxyHTTP_Facts
 {
     public class ContentLengthFacts
     {
-        private const string TenBytes = "123456789a";
+        private const string TenBytes = "1234567890";
 
         [Fact]
         public void Test_WriteOnStream_Simple_Data()
@@ -19,7 +19,7 @@ namespace ProxyHTTP_Facts
             var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody(null, 4);
+            contentHandler.HandleResponseBody(null, "4");
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
@@ -35,7 +35,7 @@ namespace ProxyHTTP_Facts
             var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody(null, 9);
+            contentHandler.HandleResponseBody(null, "9");
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
@@ -50,7 +50,7 @@ namespace ProxyHTTP_Facts
             var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody(null, 4);
+            contentHandler.HandleResponseBody(null, " 4");
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
@@ -65,7 +65,7 @@ namespace ProxyHTTP_Facts
             var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody(null, 0);
+            contentHandler.HandleResponseBody(null, "0 ");
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
@@ -81,7 +81,7 @@ namespace ProxyHTTP_Facts
             var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody(body, 4);
+            contentHandler.HandleResponseBody(body, "4");
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
@@ -97,7 +97,7 @@ namespace ProxyHTTP_Facts
             var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody(body, 10);
+            contentHandler.HandleResponseBody(body, "A");
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
@@ -105,7 +105,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_Larger_Value_Should_Work_Correctly_For_Repetitive_StreamCalls()
+        public void Test_WriteOnStream_ContentLengthValue_Larger_Than_StreamData()
         {
             //Given
             byte[] body = Encoding.UTF8.GetBytes("abcd");
@@ -113,11 +113,11 @@ namespace ProxyHTTP_Facts
             var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody(body, 25);
+            contentHandler.HandleResponseBody(body, "25");
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
-            Assert.Equal("abcd123456789abcdefghijkl", Encoding.UTF8.GetString(writtenToStream));
+            Assert.Equal("abcd123456789abcdefghijklmno", Encoding.UTF8.GetString(writtenToStream));
         }
 
         [Fact]
@@ -176,6 +176,52 @@ namespace ProxyHTTP_Facts
             Assert.Equal(64, bodyLength);
         }
 
+        [Fact]
+        public void Test_ReadFromStream_Given_BodyPart_is_Sufficient()
+        {
+            //Given
+            byte[] body = Encoding.UTF8.GetBytes("abcd");
+            var stream = new StubNetworkStream(TenBytes);
+            var contentHandler = new ContentLength(stream, stream);
 
+            //When
+            contentHandler.HandleResponseBody(body, "4");
+            byte[] writtenToStream = stream.GetReadBytes;
+
+            //Then
+            Assert.Empty(Encoding.UTF8.GetString(writtenToStream));
+        }
+
+        [Fact]
+        public void Test_ReadFromStream_When_One_Read_Should_Be_Invoked()
+        {
+            //Given
+            byte[] body = Encoding.UTF8.GetBytes("abcd");
+            var stream = new StubNetworkStream(TenBytes);
+            var contentHandler = new ContentLength(stream, stream);
+
+            //When
+            contentHandler.HandleResponseBody(body, " A ");
+            byte[] readFromStream = stream.GetReadBytes;
+
+            //Then
+            Assert.Equal("123456", Encoding.UTF8.GetString(readFromStream));
+        }
+
+        [Fact]
+        public void Test_ContentLength_HigherValue_is_Received_as_Hexadecimal()
+        {
+            //Given
+            byte[] body = Encoding.UTF8.GetBytes("abcd");
+            var stream = new StubNetworkStream(TenBytes);
+            var contentHandler = new ContentLength(stream, stream);
+
+            //When
+            contentHandler.HandleResponseBody(body, " 14 ");
+            byte[] readFromStream = stream.GetReadBytes;
+
+            //Then
+            Assert.Equal("1234567890", Encoding.UTF8.GetString(readFromStream));
+        }
     }
 }

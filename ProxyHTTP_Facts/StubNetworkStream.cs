@@ -8,27 +8,29 @@ namespace ProxyHTTP_Facts
     internal class StubNetworkStream : INetworkStream
     {
         private readonly byte[] streamBytes;
-        private byte[] writtenToStream;
         private int bytesPosition;
 
         internal StubNetworkStream(string data)
         {
-            writtenToStream = null;
+            GetWrittenBytes = null;
             bytesPosition = 0;
             streamBytes = Encoding.UTF8.GetBytes(data);
         }
 
-        internal byte[] GetWrittenBytes => writtenToStream;
+        internal byte[] GetWrittenBytes { get; private set; }
+
+        internal byte[] GetReadBytes { get; private set; }
 
         public int Read(byte[] buffer, int offset, int size)
         {
-            ThrowReadExceptions(buffer, offset, size);
+            ThrowReadWriteExceptions(buffer, offset, size);
 
             int readBytes = 0;
             for (int i = offset; i < size; i++)
             {
                 if (i >= streamBytes.Length)
                 {
+                    GetReadBytes = buffer.Skip(offset).Take(readBytes).ToArray();
                     return readBytes;
                 }
 
@@ -36,6 +38,7 @@ namespace ProxyHTTP_Facts
                 readBytes++;
             }
 
+            GetReadBytes = buffer.Skip(offset).Take(size).ToArray();
             return readBytes;
         }
 
@@ -46,18 +49,20 @@ namespace ProxyHTTP_Facts
                 return;
             }
 
+            ThrowReadWriteExceptions(buffer, offset, size);
+
             byte[] sessionBytes = new byte[buffer.Length];
             for (int i = offset; i < size; i++)
             {
                sessionBytes[i] = buffer[i];
             }
 
-            writtenToStream = writtenToStream == null
+            GetWrittenBytes = GetWrittenBytes == null
                 ? sessionBytes
-                : writtenToStream.Concat(sessionBytes).ToArray();
+                : GetWrittenBytes.Concat(sessionBytes).ToArray();
         }
 
-        private static void ThrowReadExceptions(byte[] buffer, int offset, int size)
+        private static void ThrowReadWriteExceptions(byte[] buffer, int offset, int size)
         {
             if (size - offset > buffer.Length)
             {

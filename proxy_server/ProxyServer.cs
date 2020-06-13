@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
+
+[assembly: InternalsVisibleTo("ProxyHTTP_Facts")]
 
 namespace ProxyServer
 {
@@ -190,7 +193,7 @@ namespace ProxyServer
                 new MyNetworkStream(serverStream),
                 new MyNetworkStream(browserStream));
 
-            contentHandler.HandleResponseBody(bodyPart, bodyLength);
+            contentHandler.HandleResponseBody(bodyPart, Convert.ToString(bodyLength));
 
             /*buffer = ReadAndSendBytes(
                 browser,
