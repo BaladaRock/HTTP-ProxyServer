@@ -16,10 +16,10 @@ namespace ProxyHTTP_Facts
             //Given
             const string data = "1234";
             var stream = new StubNetworkStream(data);
-            var contentHandler = new ContentLength(stream, stream, null, 4);
+            var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody();
+            contentHandler.HandleResponseBody(null, 4);
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
@@ -32,10 +32,10 @@ namespace ProxyHTTP_Facts
             //Given
             const string data = "123456789";
             var stream = new StubNetworkStream(data);
-            var contentHandler = new ContentLength(stream, stream, null, 9);
+            var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody();
+            contentHandler.HandleResponseBody(null, 9);
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
@@ -47,10 +47,10 @@ namespace ProxyHTTP_Facts
         {
             //Given
             var stream = new StubNetworkStream(TenBytes);
-            var contentHandler = new ContentLength(stream, stream, null, 4);
+            var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody();
+            contentHandler.HandleResponseBody(null, 4);
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
@@ -62,10 +62,10 @@ namespace ProxyHTTP_Facts
         {
             //Given
             var stream = new StubNetworkStream(TenBytes);
-            var contentHandler = new ContentLength(stream, stream, null, 0);
+            var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody();
+            contentHandler.HandleResponseBody(null, 0);
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
@@ -78,10 +78,10 @@ namespace ProxyHTTP_Facts
             //Given
             byte[] body = Encoding.UTF8.GetBytes("abcd");
             var stream = new StubNetworkStream(TenBytes);
-            var contentHandler = new ContentLength(stream, stream, body, 4);
+            var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody();
+            contentHandler.HandleResponseBody(body, 4);
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
@@ -94,10 +94,10 @@ namespace ProxyHTTP_Facts
             //Given
             byte[] body = Encoding.UTF8.GetBytes("abcd");
             var stream = new StubNetworkStream(TenBytes);
-            var contentHandler = new ContentLength(stream, stream, body, 10);
+            var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody();
+            contentHandler.HandleResponseBody(body, 10);
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
@@ -110,15 +110,72 @@ namespace ProxyHTTP_Facts
             //Given
             byte[] body = Encoding.UTF8.GetBytes("abcd");
             var stream = new StubNetworkStream("123456789abcdefghijklmno");
-            var contentHandler = new ContentLength(stream, stream, body, 25);
+            var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody();
+            contentHandler.HandleResponseBody(body, 25);
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
             Assert.Equal("abcd123456789abcdefghijkl", Encoding.UTF8.GetString(writtenToStream));
         }
+
+        [Fact]
+        public void Test_ConvertFromHexadecimal_Should_Correctly_Convert_SmallNumber()
+        {
+            //Given
+            const string hexa = "4";
+            var contentHandler = new ContentLength(null, null);
+
+            //When
+            int bodyLength = contentHandler.ConvertFromHexadecimal(hexa);
+
+            //Then
+            Assert.Equal(4, bodyLength);
+        }
+
+        [Fact]
+        public void Test_ConvertFromHexadecimal_String_Has_Hexadecimal_Symbols()
+        {
+            //Given
+            const string hexa = "AB1";
+            var contentHandler = new ContentLength(null, null);
+
+            //When
+            int bodyLength = contentHandler.ConvertFromHexadecimal(hexa);
+
+            //Then
+            Assert.Equal(2737, bodyLength);
+        }
+
+        [Fact]
+        public void Test_ConvertFromHexadecimal_Should_Correctly_Convert_LargerNumber()
+        {
+            //Given
+            const string hexa = "7AB45";
+            var contentHandler = new ContentLength(null, null);
+
+            //When
+            int bodyLength = contentHandler.ConvertFromHexadecimal(hexa);
+
+            //Then
+            Assert.Equal(502597, bodyLength);
+        }
+
+        [Fact]
+        public void Test_ConvertFromHexadecimal_String_Has_Whitespaces()
+        {
+            //Given
+            const string hexa = " 40 ";
+            var contentHandler = new ContentLength(null, null);
+
+            //When
+            int bodyLength = contentHandler.ConvertFromHexadecimal(hexa);
+
+            //Then
+            Assert.Equal(64, bodyLength);
+        }
+
 
     }
 }

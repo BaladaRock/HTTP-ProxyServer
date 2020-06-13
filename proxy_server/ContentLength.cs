@@ -8,18 +8,15 @@ namespace ProxyServer
     {
         private INetworkStream serverStream;
         private INetworkStream browserStream;
-        private byte[] bodyPart;
-        private int bodyLength;
+        
 
-        public ContentLength(INetworkStream serverStream, INetworkStream browserStream, byte[] bodyPart, int bodyLength)
+        public ContentLength(INetworkStream serverStream, INetworkStream browserStream)
         {
             this.serverStream = serverStream;
             this.browserStream = browserStream;
-            this.bodyPart = bodyPart;
-            this.bodyLength = bodyLength;
         }
 
-        internal void HandleResponseBody()
+        internal void HandleResponseBody(byte[] bodyPart, int bodyLength)
         {
             byte[] buffer = new byte[bodyLength];
             int bodyPartSize = 0;
@@ -31,6 +28,11 @@ namespace ProxyServer
 
             int read = serverStream.Read(buffer, 0, buffer.Length - bodyPartSize);
             browserStream.Write(buffer.Take(read).ToArray(), 0, read);
+        }
+
+        internal int ConvertFromHexadecimal(string hexa)
+        {
+            return Convert.ToInt32(hexa.Trim(), 16);
         }
     }
 }

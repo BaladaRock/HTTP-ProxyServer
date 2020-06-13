@@ -188,11 +188,9 @@ namespace ProxyServer
         {
             var contentHandler = new ContentLength(
                 new MyNetworkStream(serverStream),
-                new MyNetworkStream(browserStream),
-                bodyPart,
-                bodyLength);
+                new MyNetworkStream(browserStream));
 
-            contentHandler.HandleResponseBody();
+            contentHandler.HandleResponseBody(bodyPart, bodyLength);
 
             /*buffer = ReadAndSendBytes(
                 browser,
