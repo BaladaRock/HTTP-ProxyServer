@@ -23,11 +23,10 @@ namespace ProxyServer
 
         internal void HandleResponseBody(byte[] bodyPart, string bytesToRead)
         {
-            int totalBodyLength = ConvertFromHexadecimal(bytesToRead);
-            int remainingBytes = totalBodyLength;
+            int remainingBytes = ConvertFromHexadecimal(bytesToRead);
             if (bodyPart != null)
             {
-                remainingBytes = totalBodyLength - bodyPart.Length;
+                remainingBytes -= bodyPart.Length;
                 browserStream.Write(bodyPart, 0, bodyPart.Length);
             }
 
