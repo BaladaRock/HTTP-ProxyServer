@@ -22,33 +22,34 @@ namespace ProxyServer
         public void StartProxy()
         {
             TcpListener proxy = new TcpListener(IPAddress.Parse(proxyIP), 8080);
-
             proxy.Start();
 
             while (true)
             {
                 Console.Write("Waiting for web client... ");
 
-                TcpClient client = proxy.AcceptTcpClient();
+                TcpClient browser = proxy.AcceptTcpClient();
+                NetworkStream browserStream = browser.GetStream();
                 Console.WriteLine("Connected!");
 
-                NetworkStream browserStream = client.GetStream();
-                string request = GetRequest(browserStream, client);
+                string request = GetRequest(browserStream, browser);
 
                 if (CheckRequest(request))
                 {
                     try
                     {
                         string host = GetHost(request);
-                        NetworkStream stream = new TcpClient(host, 80).GetStream();
-                        SendRequest(stream, request);
-                        HandleResponse(client, stream);
+                        NetworkStream hostStream = new TcpClient(host, 80).GetStream();
+                        SendRequest(hostStream, request);
+                        HandleResponse(browser, hostStream);
                     }
                     catch (Exception hostException)
                     {
                         //hostName does not exist
                     }
                 }
+
+                browser.Close();
             }
         }
 
@@ -194,15 +195,6 @@ namespace ProxyServer
                 new MyNetworkStream(browserStream));
 
             contentHandler.HandleResponseBody(bodyPart, Convert.ToString(bodyLength));
-
-            /*buffer = ReadAndSendBytes(
-                browser,
-                stream,
-                bodyPart,
-                new HttpParser(bodyPart),
-                Headers.EmptyLine).remainder;
-
-            SendChunkToBrowser(stream, browser, bodyLength, bodyPart.ToArray());*/
         }
 
         private void HandleResponse(TcpClient browser, NetworkStream serverStream)
@@ -232,7 +224,7 @@ namespace ProxyServer
                     HandleChunked(browser, serverStream, remainder);
                 }
 
-                browser.Close();
+               // browser.Close();
             }
             catch (Exception exception)
             {

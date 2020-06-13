@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
 
 namespace ProxyServer
 {
@@ -16,18 +17,14 @@ namespace ProxyServer
             this.browserStream = browserStream;
         }
 
-        internal int ConvertFromHexadecimal(string hexa)
-        {
-            return Convert.ToInt32(hexa.Trim(), 16);
-        }
-
         internal void HandleResponseBody(byte[] bodyPart, string bytesToRead)
         {
-            int remainingBytes = ConvertFromHexadecimal(bytesToRead);
+            int remainingBytes = Convert.ToInt32(bytesToRead.Trim());
             if (bodyPart != null)
             {
                 remainingBytes -= bodyPart.Length;
                 browserStream.Write(bodyPart, 0, bodyPart.Length);
+                WriteMessage(bodyPart);
             }
 
             HandleRemainingBody(remainingBytes);
@@ -42,11 +39,18 @@ namespace ProxyServer
             {
                 readFromStream = serverStream.Read(buffer, 0, BufferSize);
                 browserStream.Write(buffer, 0, readFromStream);
+                WriteMessage(buffer.Take(readFromStream).ToArray());
                 remainingBytes -= BufferSize;
             }
 
             readFromStream = serverStream.Read(buffer, 0, remainingBytes);
             browserStream.Write(buffer.Take(readFromStream).ToArray(), 0, readFromStream);
+            WriteMessage(buffer);
+        }
+
+        private void WriteMessage(byte[] message)
+        {
+            Console.WriteLine($"Proxy has sent response to browser: {Encoding.UTF8.GetString(message)}");
         }
     }
 }

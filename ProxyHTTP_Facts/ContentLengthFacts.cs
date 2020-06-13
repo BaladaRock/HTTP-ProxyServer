@@ -97,7 +97,7 @@ namespace ProxyHTTP_Facts
             var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody(body, "A");
+            contentHandler.HandleResponseBody(body, "10");
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
@@ -113,14 +113,14 @@ namespace ProxyHTTP_Facts
             var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody(body, "25");
+            contentHandler.HandleResponseBody(body, "37");
             byte[] writtenToStream = stream.GetWrittenBytes;
 
             //Then
             Assert.Equal("abcd123456789abcdefghijklmno", Encoding.UTF8.GetString(writtenToStream));
         }
 
-        [Fact]
+        /*[Fact]
         public void Test_ConvertFromHexadecimal_Should_Correctly_Convert_SmallNumber()
         {
             //Given
@@ -174,7 +174,12 @@ namespace ProxyHTTP_Facts
 
             //Then
             Assert.Equal(64, bodyLength);
+
+            internal int ConvertFromHexadecimal(string hexa)
+        {
+            return Convert.ToInt32(hexa.Trim(), 16);
         }
+        }*/
 
         [Fact]
         public void Test_ReadFromStream_Given_BodyPart_is_Sufficient()
@@ -201,27 +206,11 @@ namespace ProxyHTTP_Facts
             var contentHandler = new ContentLength(stream, stream);
 
             //When
-            contentHandler.HandleResponseBody(body, " A ");
+            contentHandler.HandleResponseBody(body, " 10 ");
             byte[] readFromStream = stream.GetReadBytes;
 
             //Then
             Assert.Equal("123456", Encoding.UTF8.GetString(readFromStream));
-        }
-
-        [Fact]
-        public void Test_ContentLength_HigherValue_is_Received_as_Hexadecimal()
-        {
-            //Given
-            byte[] body = Encoding.UTF8.GetBytes("abcd");
-            var stream = new StubNetworkStream(TenBytes);
-            var contentHandler = new ContentLength(stream, stream);
-
-            //When
-            contentHandler.HandleResponseBody(body, " 14 ");
-            byte[] readFromStream = stream.GetReadBytes;
-
-            //Then
-            Assert.Equal("1234567890", Encoding.UTF8.GetString(readFromStream));
         }
     }
 }
