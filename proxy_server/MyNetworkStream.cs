@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Linq;
 using System.Net.Sockets;
+using System.Text;
 
 namespace ProxyServer
 {
@@ -15,12 +17,20 @@ namespace ProxyServer
 
         public int Read(byte[] buffer, int offset, int size)
         {
+            WriteMessage(buffer.Skip(offset).Take(size).ToArray());
             return networkStream.Read(buffer, offset, size);
         }
 
         public void Write(byte[] buffer, int offset, int size)
         {
+            WriteMessage(buffer.Skip(offset).Take(size).ToArray());
             networkStream.Write(buffer, offset, size);
+        }
+
+        private void WriteMessage(byte[] buffer)
+        {
+            string message = Encoding.UTF8.GetString(buffer);
+            Console.WriteLine($"Proxy has sent response to browser: {message}");
         }
     }
 }
