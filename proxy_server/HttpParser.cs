@@ -44,6 +44,11 @@ namespace ProxyServer
 
         public byte[] ReadLine(string separator)
         {
+            if (remainingBytes == null)
+            {
+                return default;
+            }
+
             byte[] endLine = Encoding.UTF8.GetBytes(separator);
             int index = GetPosition(remainingBytes, endLine);
 
@@ -80,6 +85,13 @@ namespace ProxyServer
             }
 
             return -1;
+        }
+
+        public byte[] GetRemainder()
+        {
+            return remainingBytes?.Length == 0
+                 ? default
+                 : remainingBytes;
         }
     }
 }

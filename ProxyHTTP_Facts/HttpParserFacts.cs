@@ -299,5 +299,98 @@ namespace ProxyHTTP_Facts
             // Then
             Assert.Equal("322345\r\n\r\n", Encoding.UTF8.GetString(line));
         }
+
+        [Fact]
+        public void Test_GetRemainder_After_Simple_Read()
+        {
+            // Given
+            const string data = "1234\r\n\r\nabc";
+            byte[] buffer = Encoding.UTF8.GetBytes(data);
+            var parser = new HttpParser(buffer);
+
+            // When
+            parser.ReadLine(EmptyLine);
+            byte[] remainder = parser.GetRemainder();
+
+            // Then
+            Assert.Equal("abc", Encoding.UTF8.GetString(remainder));
+        }
+
+        [Fact]
+        public void Test_GetRemainder_After_Multiple_Reads()
+        {
+            // Given
+            const string data = "1234\r\n\r\nabc";
+            byte[] buffer = Encoding.UTF8.GetBytes(data);
+            var parser = new HttpParser(buffer);
+
+            // When
+            parser.ReadLine(NewLine);
+            parser.ReadLine(NewLine);
+            byte[] remainder = parser.GetRemainder();
+
+            // Then
+            Assert.Equal("abc", Encoding.UTF8.GetString(remainder));
+        }
+
+        [Fact]
+        public void Test_GetRemainder_When_NO_Separator_Has_been_found()
+        {
+            // Given
+            const string data = "1234abc";
+            byte[] buffer = Encoding.UTF8.GetBytes(data);
+            var parser = new HttpParser(buffer);
+
+            // When
+            parser.ReadLine(NewLine);
+            byte[] remainder = parser.GetRemainder();
+
+            // Then
+            Assert.Equal("1234abc", Encoding.UTF8.GetString(remainder));
+        }
+
+        [Fact]
+        public void Test_GetRemainder_Should_Return_NULL_When_EntireBuffer_WasRead()
+        {
+            // Given
+            const string data = "1234abc";
+            const string separator = "c";
+            byte[] buffer = Encoding.UTF8.GetBytes(data);
+            var parser = new HttpParser(buffer);
+
+            // When
+            parser.ReadLine(separator);
+            byte[] remainder = parser.GetRemainder();
+
+            // Then
+            Assert.Null(remainder);
+        }
+
+        [Fact]
+        public void Test_ReadLine_When_Buffer_is_NULL()
+        {
+            // Given
+            var parser = new HttpParser(null);
+
+            // When
+            var read = parser.ReadLine("abc");
+
+            // Then
+            Assert.Null(read);
+        }
+
+        [Fact]
+        public void Test_GetRemainder_When_Buffer_is_NULL()
+        {
+            // Given
+            var parser = new HttpParser(null);
+
+            // When
+            parser.ReadLine("abc");
+            var remainder = parser.GetRemainder();
+
+            // Then
+            Assert.Null(remainder);
+        }
     }
 }

@@ -5,7 +5,7 @@ using Xunit;
 
 namespace ProxyHTTP_Facts
 {
-    public class HttpReaderFacts
+    public class HeadersReaderFacts
     {
         private const int Eight = 8;
         private const int Seven = 7;
