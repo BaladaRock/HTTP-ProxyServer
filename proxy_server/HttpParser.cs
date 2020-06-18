@@ -14,16 +14,9 @@ namespace ProxyServer
             remainingBytes = buffer;
         }
 
-        public bool Check(byte[] readLine, byte[] first, byte[] second = null)
+        public bool Contains(byte[] array, byte[] subArray)
         {
-            bool checkFirst = Contains(readLine, first);
-
-            if (second != null)
-            {
-                return checkFirst && Contains(readLine, second);
-            }
-
-            return checkFirst;
+            return GetPosition(array, subArray) != -1;
         }
 
         public int GetContentLength(byte[] readLine)
@@ -34,11 +27,6 @@ namespace ProxyServer
                             readLine.Skip(headerTitle)
                                 .TakeWhile(bytes => bytes != '\r')
                                     .ToArray()));
-        }
-
-        public int GetPosition(byte[] array, byte[] subArray)
-        {
-            return SubArrayPosition(array, subArray);
         }
 
         public bool IsChunkComplete(byte[] byteLine, string ending, int minimumSize = 0)
@@ -69,9 +57,9 @@ namespace ProxyServer
             return remainingBytes;
         }
 
-        public bool Contains(byte[] array, byte[] subArray)
+        internal int GetPosition(byte[] array, byte[] subArray)
         {
-            return GetPosition(array, subArray) != -1;
+            return SubArrayPosition(array, subArray);
         }
 
         private int SubArrayPosition(byte[] array, byte[] subArray, int start = 0)
