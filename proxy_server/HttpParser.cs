@@ -8,9 +8,11 @@ namespace ProxyServer
     public class HttpParser
     {
         private byte[] remainingBytes;
+        private readonly byte[] buffer;
 
         public HttpParser(byte[] buffer)
         {
+            this.buffer = buffer;
             remainingBytes = buffer;
         }
 
@@ -89,7 +91,14 @@ namespace ProxyServer
 
         public byte[] GetRemainder()
         {
-            return remainingBytes?.Length == 0
+            if (remainingBytes == null)
+            {
+                return default;
+            }
+
+            int remainderLength = remainingBytes.Length;
+
+            return remainderLength == 0 || remainderLength == buffer.Length
                  ? default
                  : remainingBytes;
         }

@@ -16,7 +16,7 @@ namespace ProxyHTTP_Facts
         public void Should_Correctly_ReadHeaders_EdgeCase_With_MULTIPLE_Reads()
         {
             //Given
-            const string data = "1234\r\n\r\nandrei";
+            const string data = "12\r\n123\r\n1234\r\n\r\nandrei";
             var stream = new StubNetworkStream(data);
 
             //When
@@ -24,7 +24,7 @@ namespace ProxyHTTP_Facts
             byte[] headers = reader.ReadHeaders();
 
             //Then
-            Assert.Equal("1234\r\n\r\n", Encoding.UTF8.GetString(headers));
+            Assert.Equal("12\r\n123\r\n1234\r\n\r\n", Encoding.UTF8.GetString(headers));
         }
 
         [Fact]
@@ -156,7 +156,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_Read_Method_Should_Return_Null_When_Separator_Is_Not_Found()
+        public void Test_ReadHeaders_Should_Return_Null_When_Separator_Is_Not_Found()
         {
             //Given
             const string data = "1234andrei";
@@ -171,7 +171,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_Read_Method_EndLine_Is_AtTheEnd()
+        public void Test_ReadHeaders_EndLine_Is_AtTheEnd()
         {
             //Given
             const string data = "12345678\r\n\r\n";
@@ -186,7 +186,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_Read_Method_For_Simple_Case()
+        public void Test_ReadHeaders_For_Simple_Case()
         {
             //Given
             const string data = "12345\r\n\r\n678";
@@ -198,6 +198,21 @@ namespace ProxyHTTP_Facts
 
             //Then
             Assert.Equal("12345\r\n\r\n", Encoding.UTF8.GetString(headers));
+        }
+
+        [Fact]
+        public void Test_ReadHeaders_Headers_are_Stored_Completely_after_Multiple_Reads()
+        {
+            //Given
+            const string data = "12\r\n34\r\n5678\r\n\r\n";
+            var stream = new StubNetworkStream(data);
+
+            //When
+            var reader = new HeadersReader(stream, data.Length);
+            byte[] headers = reader.ReadHeaders();
+
+            //Then
+            Assert.Equal(data, Encoding.UTF8.GetString(headers));
         }
     }
 }

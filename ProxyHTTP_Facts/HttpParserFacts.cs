@@ -334,7 +334,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_GetRemainder_When_NO_Separator_Has_been_found()
+        public void Test_GetRemainder_ShouldReturn_NULL_When_NO_Separator_Has_been_found()
         {
             // Given
             const string data = "1234abc";
@@ -346,7 +346,7 @@ namespace ProxyHTTP_Facts
             byte[] remainder = parser.GetRemainder();
 
             // Then
-            Assert.Equal("1234abc", Encoding.UTF8.GetString(remainder));
+            Assert.Null(remainder);
         }
 
         [Fact]
