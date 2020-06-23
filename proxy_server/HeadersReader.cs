@@ -50,13 +50,29 @@ namespace ProxyServer
                 readLine = parser.ReadLine(Headers.NewLine);
             }
 
-            if (readLine.SequenceEqual(Headers.NewLineByte))
+            headers = headers.Concat(readLine);
+            if(!readLine.SequenceEqual(Headers.NewLineByte))
             {
-                headers = headers.Concat(readLine);
-            }
-            else
-            {
-                headers = readLine;
+                byte[] remainder = parser.GetRemainder();
+                if (remainder == null)
+                {
+                    int oldLength = readFromStream;
+                    ReadAndResizeBuffer();
+                    if (readFromStream == oldLength)
+                    {
+                        return default;
+                    }
+
+                    buffer = buffer.Skip(oldLength).ToArray();
+                    parser = new HttpParser(buffer);
+                    readFromStream = buffer.Length;
+                }
+                else
+                {
+                    buffer = remainder;
+                    readFromStream = buffer.Length;
+                    parser = new HttpParser(buffer);
+                }
                 ReadHeaders();
             }
 
