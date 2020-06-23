@@ -205,7 +205,7 @@ namespace ProxyServer
 
                 var handleHeaders = new HeadersReader(new MyNetworkStream(serverStream), 512);
                 byte[] headers = handleHeaders.ReadHeaders();
-                byte[] remainder = handleHeaders.GetRemainder();
+                byte[] remainder = handleHeaders.Remainder;
                 SendResponse(browser, headers);
 
                 var checkHeaders = new HttpParser(headers);

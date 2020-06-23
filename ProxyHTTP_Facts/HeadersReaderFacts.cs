@@ -8,10 +8,10 @@ namespace ProxyHTTP_Facts
     public class HeadersReaderFacts
     {
         private const int Eight = 8;
-        private const int Seven = 7;
+        private const int Four = 4;
         private const int Ten = 10;
-        private const int Two = 2;
         private const int Three = 3;
+        private const int Two = 2;
 
         [Fact]
         public void Should_Correctly_ReadHeaders_EdgeCase_With_MULTIPLE_Reads()
@@ -38,7 +38,7 @@ namespace ProxyHTTP_Facts
             //When
             var reader = new HeadersReader(stream, Two);
             reader.ReadHeaders();
-            byte[] remainder = reader.GetRemainder();
+            byte[] remainder = reader.Remainder;
 
             //Then
             Assert.Equal("a", Encoding.UTF8.GetString(remainder));
@@ -69,30 +69,30 @@ namespace ProxyHTTP_Facts
             //When
             var reader = new HeadersReader(stream, Ten);
             reader.ReadHeaders();
-            byte[] remainder = reader.GetRemainder();
+            byte[] remainder = reader.Remainder;
 
             //Then
             Assert.Equal("an", Encoding.UTF8.GetString(remainder));
         }
 
         [Fact]
-        public void Test_GetRemainder_GivenSize_is_Smaller_Than_Total_StreamData()
+        public void Test_GetRemainder_ReadSize_OverTakes_Total_StreamData()
         {
             //Given
             const string data = "1234\r\n\r\nandrei";
             var stream = new StubNetworkStream(data);
 
             //When
-            var reader = new HeadersReader(stream, Seven);
+            var reader = new HeadersReader(stream, 7);
             reader.ReadHeaders();
-            byte[] remainder = reader.GetRemainder();
+            byte[] remainder = reader.Remainder;
 
             //Then
             Assert.Equal("andrei", Encoding.UTF8.GetString(remainder));
         }
 
         [Fact]
-        public void Test_ReadProcess_GivenSize_is_Smaller_Than_Total_StreamData_SecondTest()
+        public void Test_ReadProcess_ReadSize_Overtakes_Total_StreamData_SecondTest()
         {
             //Given
             const string data = "1234\r\n\r\nandrei";
@@ -101,11 +101,42 @@ namespace ProxyHTTP_Facts
             //When
             var reader = new HeadersReader(stream, Eight);
             byte[] headers = reader.ReadHeaders();
-            byte[] remainder = reader.GetRemainder();
+            byte[] remainder = reader.Remainder;
 
             //Then
             Assert.Equal("1234\r\n\r\n", Encoding.UTF8.GetString(headers));
             Assert.Null(remainder);
+        }
+
+        [Fact]
+        public void Test_ReadProcess_ReadSize_Overtakes_StreamData_OneHeader_WasFound()
+        {
+            //Given
+            const string data = "12\r\n";
+            var stream = new StubNetworkStream(data);
+
+            //When
+            var reader = new HeadersReader(stream, Four);
+            byte[] headers = reader.ReadHeaders();
+
+            //Then
+            Assert.Null(headers);
+        }
+
+        [Fact]
+        public void Test_GetRemainder_ReadSize_Overtakes_StreamData_more_Complex_Case()
+        {
+            //Given
+            const string data = "12\r\n34\r\n\r\naa";
+            var stream = new StubNetworkStream(data);
+
+            //When
+            var reader = new HeadersReader(stream, Eight);
+            reader.ReadHeaders();
+            byte[] remainder = reader.Remainder;
+
+            //Then
+            Assert.Equal("aa", Encoding.UTF8.GetString(remainder));
         }
 
         [Fact]
@@ -133,7 +164,7 @@ namespace ProxyHTTP_Facts
             //When
             var reader = new HeadersReader(stream, Three);
             reader.ReadHeaders();
-            var remainder = reader.GetRemainder();
+            byte[] remainder = reader.Remainder;
 
             //Then
             Assert.Equal("ab", Encoding.UTF8.GetString(remainder));
@@ -149,7 +180,7 @@ namespace ProxyHTTP_Facts
             //When
             var reader = new HeadersReader(stream, 3);
             reader.ReadHeaders();
-            byte[] remainder = reader.GetRemainder();
+            byte[] remainder = reader.Remainder;
 
             //Then
             Assert.Null(remainder);
@@ -165,7 +196,7 @@ namespace ProxyHTTP_Facts
             //When
             var reader = new HeadersReader(stream, Three);
             byte[] headers = reader.ReadHeaders();
-            byte[] remainder = reader.GetRemainder();
+            byte[] remainder = reader.Remainder;
 
             //Then
             Assert.Equal("1234\r\n\r\n", Encoding.UTF8.GetString(headers));
@@ -182,7 +213,7 @@ namespace ProxyHTTP_Facts
             //When
             var reader = new HeadersReader(stream, Eight);
             reader.ReadHeaders();
-            byte[] remainder = reader.GetRemainder();
+            byte[] remainder = reader.Remainder;
 
             //Then
             Assert.Null(remainder);
@@ -198,7 +229,7 @@ namespace ProxyHTTP_Facts
             //When
             var reader = new HeadersReader(stream, Two);
             reader.ReadHeaders();
-            byte[] remainder = reader.GetRemainder();
+            byte[] remainder = reader.Remainder;
 
             //Then
             Assert.Null(remainder);
@@ -214,7 +245,7 @@ namespace ProxyHTTP_Facts
             //When
             var reader = new HeadersReader(stream, Eight);
             reader.ReadHeaders();
-            byte[] remainder = reader.GetRemainder();
+            byte[] remainder = reader.Remainder;
 
             //Then
             Assert.Null(remainder);

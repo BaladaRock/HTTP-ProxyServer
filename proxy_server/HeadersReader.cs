@@ -7,11 +7,12 @@ namespace ProxyServer
     public class HeadersReader
     {
         private const string NewLine = Headers.NewLine;
+
         private readonly int bufferSize;
         private readonly INetworkStream networkStream;
         private byte[] buffer;
-        private HttpParser parser;
         private IEnumerable<byte> headers;
+        private HttpParser parser;
         private int readFromStream;
 
         public HeadersReader(INetworkStream stream, int size)
@@ -24,40 +25,7 @@ namespace ProxyServer
             InitialiseParser();
         }
 
-        private void InitialiseParser()
-        {
-            ReadFromStream(0);
-            parser = new HttpParser(buffer);
-        }
-
-        public byte[] GetRemainder()
-        {
-            return parser.GetRemainder();
-        }
-
-        private bool CheckReadProcess(int readBytes)
-        {
-            int oldLength = readBytes;
-            ReadAndResizeBuffer();
-
-            return readFromStream == oldLength;
-        }
-
-        private byte[] GetHeader(byte[] readLine)
-        {
-            while (!parser.IsChunkComplete(readLine, NewLine))
-            {
-                if (CheckReadProcess(readFromStream))
-                {
-                    return default;
-                }
-
-                parser = new HttpParser(buffer);
-                readLine = parser.ReadLine(NewLine);
-            }
-
-            return readLine;
-        }
+        public byte[] Remainder { get; private set; }
 
         public byte[] ReadHeaders()
         {
@@ -71,30 +39,55 @@ namespace ProxyServer
 
             if (!readLine.SequenceEqual(Headers.NewLineByte))
             {
-                byte[] remainder = parser.GetRemainder();
-                if (remainder == null)
-                {
-                    int oldLength = readFromStream;
-                    if (CheckReadProcess(oldLength))
-                    {
-                        return default;
-                    }
-
-                    buffer = buffer.Skip(oldLength).ToArray();
-                }
-                else
-                {
-                    buffer = remainder;
-                }
+                buffer = parser.GetRemainder() ?? GetNewBuffer();
 
                 parser = new HttpParser(buffer);
+                readFromStream -= readLine.Length;
                 ReadHeaders();
             }
 
             var byteHeaders = headers.ToArray();
+
+            Remainder = parser.GetRemainder();
             return parser.IsChunkComplete(byteHeaders, Headers.EmptyLine)
                 ? byteHeaders
-                : null;
+                : default;
+        }
+
+        private byte[] GetNewBuffer()
+        {
+            ReadAndResizeBuffer();
+            return buffer.Skip(buffer.Length - bufferSize).ToArray();
+        }
+
+        private bool CheckReadProcess()
+        {
+            int oldLength = readFromStream;
+            ReadAndResizeBuffer();
+
+            return readFromStream == oldLength;
+        }
+
+        private byte[] GetHeader(byte[] readLine)
+        {
+            while (!parser.IsChunkComplete(readLine, NewLine))
+            {
+                if (CheckReadProcess())
+                {
+                    return default;
+                }
+
+                parser = new HttpParser(buffer);
+                readLine = parser.ReadLine(NewLine);
+            }
+
+            return readLine;
+        }
+
+        private void InitialiseParser()
+        {
+            ReadFromStream(0);
+            parser = new HttpParser(buffer);
         }
 
         private void ReadAndResizeBuffer()
