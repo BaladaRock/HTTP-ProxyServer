@@ -28,7 +28,7 @@ namespace ProxyHTTP_Facts
             int readBytes = 0;
             for (int i = offset; i < size; i++)
             {
-                if (i >= streamBytes.Length)
+                if (i >= streamBytes.Length || bytesPosition >= streamBytes.Length)
                 {
                     GetReadBytes = buffer.Skip(offset).Take(readBytes).ToArray();
                     return readBytes;
