@@ -21,14 +21,14 @@ namespace ProxyServer
             return GetPosition(array, subArray) != -1;
         }
 
-        public int GetContentLength(byte[] readLine)
+        public string GetContentLength(byte[] readLine)
         {
             int headerTitle = GetPosition(readLine, Headers.ContentHeader);
 
-            return Convert.ToInt32(Encoding.UTF8.GetString(
+            return Encoding.UTF8.GetString(
                             readLine.Skip(headerTitle)
                                 .TakeWhile(bytes => bytes != '\r')
-                                    .ToArray()));
+                                    .ToArray());
         }
 
         public bool IsChunkComplete(byte[] byteLine, string ending, int minimumSize = 0)

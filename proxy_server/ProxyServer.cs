@@ -216,8 +216,7 @@ namespace ProxyServer
                         serverStream,
                         browserStream,
                         remainder,
-                        checkHeaders.GetContentLength(headers.Skip(contentPosition).ToArray())
-                        );
+                        handleHeaders.ContentLength);
                 }
                 else if (checkHeaders.Contains(headers, Headers.Chunked))
                 {

@@ -10,9 +10,9 @@ namespace ProxyServer
 
         internal static byte[] Chunked => GetBytes("chunked");
 
-        internal static byte[] ChunkedHeader => GetBytes("Transfer-Encoding: ");
+        internal static byte[] ChunkedHeader => GetBytes("transfer-encoding: ");
 
-        internal static byte[] ContentHeader => GetBytes("Content-Length: ");
+        internal static byte[] ContentHeader => GetBytes("content-length: ");
 
         internal static byte[] EmptyLineBytes => GetBytes(EmptyLine);
 

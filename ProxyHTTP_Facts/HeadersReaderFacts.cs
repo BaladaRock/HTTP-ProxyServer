@@ -324,5 +324,20 @@ namespace ProxyHTTP_Facts
             Assert.Equal("1234\r\n\r\n", Encoding.UTF8.GetString(headers));
             Assert.Null(remainder);
         }
+
+        [Fact]
+        public void Test_ContentLength_Header_Should_Return_TRUE_Valid_Case()
+        {
+            //Given
+            const string data = "12\r\ncontent-length: 100\r\n\r\n";
+            var stream = new StubNetworkStream(data);
+
+            //When
+            var reader = new HeadersReader(stream, Eight);
+            reader.ReadHeaders();
+
+            //Then
+            Assert.Equal(100, reader.ContentLength);
+        }
     }
 }

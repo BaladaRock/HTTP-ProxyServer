@@ -27,6 +27,8 @@ namespace ProxyServer
 
         public byte[] Remainder { get; private set; }
 
+        public int ContentLength { get; internal set; }
+
         public byte[] ReadHeaders()
         {
             byte[] readLine = GetHeader(parser.ReadLine(NewLine));
@@ -35,23 +37,33 @@ namespace ProxyServer
                 return default;
             }
 
+            CheckForHeaderFields(readLine);
             headers = headers.Concat(readLine);
 
             if (!readLine.SequenceEqual(Headers.NewLineByte))
             {
                 buffer = parser.GetRemainder() ?? GetNewBuffer();
-
                 parser = new HttpParser(buffer);
                 readFromStream -= readLine.Length;
                 ReadHeaders();
             }
 
+            Remainder = parser.GetRemainder();
             var byteHeaders = headers.ToArray();
 
-            Remainder = parser.GetRemainder();
             return parser.IsChunkComplete(byteHeaders, Headers.EmptyLine)
                 ? byteHeaders
                 : default;
+        }
+
+        private void CheckForHeaderFields(byte[] readLine)
+        {
+            if (!int.TryParse(parser.GetContentLength(readLine), out int ignored))
+            {
+                return;
+            }
+
+            ContentLength = ignored;
         }
 
         private byte[] GetNewBuffer()
