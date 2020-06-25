@@ -326,7 +326,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_ContentLength_Header_Should_Return_TRUE_Valid_Case()
+        public void Test_ContentLength_Header_Should_Return_Correctly_Valid_Case()
         {
             //Given
             const string data = "12\r\ncontent-length: 100\r\n\r\n";
@@ -338,6 +338,51 @@ namespace ProxyHTTP_Facts
 
             //Then
             Assert.Equal(100, reader.ContentLength);
+        }
+
+        [Fact]
+        public void Test_ContentLength_Header_Should_Return_Zero()
+        {
+            //Given
+            const string data = "12\r\ncontent-length: 0\r\n\r\n";
+            var stream = new StubNetworkStream(data);
+
+            //When
+            var reader = new HeadersReader(stream, Eight);
+            reader.ReadHeaders();
+
+            //Then
+            Assert.Equal(0, reader.ContentLength);
+        }
+
+        [Fact]
+        public void Test_ContentLength_Header_Should_Work_for_UpperCases()
+        {
+            //Given
+            const string data = "12\r\nContent-Length: 10\r\n\r\n";
+            var stream = new StubNetworkStream(data);
+
+            //When
+            var reader = new HeadersReader(stream, Eight);
+            reader.ReadHeaders();
+
+            //Then
+            Assert.Equal(10, reader.ContentLength);
+        }
+
+        [Fact]
+        public void Test_ContentLength_Header_Should_Return_Negative_InvalidValue()
+        {
+            //Given
+            const string data = "12\r\nContent-Length: -10\r\n\r\n";
+            var stream = new StubNetworkStream(data);
+
+            //When
+            var reader = new HeadersReader(stream, Eight);
+            reader.ReadHeaders();
+
+            //Then
+            Assert.Equal(-1, reader.ContentLength);
         }
     }
 }
