@@ -71,6 +71,18 @@ namespace ProxyServer
             return remainingBytes;
         }
 
+        public bool IsChunked(byte[] readLine)
+        {
+            string line = Encoding.UTF8.GetString(readLine).ToLower();
+            line = line.Replace(" ", string.Empty)
+                       .Replace("\r\n", string.Empty);
+
+            Match match = Regex.Match(line, Headers.ChunkedHeader);
+
+            return match.Success &&
+                   Regex.Match(line.Substring(match.Index), Headers.Chunked).Success;
+        }
+
         internal int GetPosition(byte[] array, byte[] subArray)
         {
             return SubArrayPosition(array, subArray);

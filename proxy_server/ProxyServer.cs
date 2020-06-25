@@ -208,7 +208,6 @@ namespace ProxyServer
                 byte[] remainder = handleHeaders.Remainder;
                 SendResponse(browser, headers);
 
-                var checkHeaders = new HttpParser(headers);
                 int contentPosition = handleHeaders.ContentLength;
                 if (contentPosition != -1)
                 {
@@ -218,7 +217,7 @@ namespace ProxyServer
                         remainder,
                         handleHeaders.ContentLength);
                 }
-                else if (checkHeaders.Contains(headers, Headers.Chunked))
+                else if (handleHeaders.Chunked)
                 {
                     HandleChunked(browser, serverStream, remainder);
                 }

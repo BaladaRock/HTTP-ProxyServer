@@ -27,6 +27,8 @@ namespace ProxyServer
 
         public byte[] Remainder { get; private set; }
 
+        public bool Chunked { get; private set; }
+
         public int ContentLength { get; private set; }
 
         public byte[] ReadHeaders(bool checker = false)
@@ -69,6 +71,11 @@ namespace ProxyServer
 
         private void CheckForHeaderFields(byte[] readLine)
         {
+            if (parser.IsChunked(readLine))
+            {
+                Chunked = true;
+            }
+
             if (!uint.TryParse(parser.GetContentLength(readLine), out uint value))
             {
                 return;
@@ -112,6 +119,7 @@ namespace ProxyServer
             ReadFromStream(0);
             parser = new HttpParser(buffer);
             ContentLength = -1;
+            Chunked = false;
         }
 
         private void ReadAndResizeBuffer()

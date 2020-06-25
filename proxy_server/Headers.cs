@@ -4,6 +4,8 @@ namespace ProxyServer
 {
     internal static class Headers
     {
+        internal const string Chunked = "chunked";
+
         internal const string ChunkedHeader = "transfer-encoding:";
 
         internal const string ContentHeader = "content-length:";
@@ -14,7 +16,6 @@ namespace ProxyServer
 
         internal const string ZeroChunk = "0\r\n";
 
-        internal static byte[] Chunked => GetBytes("chunked");
         internal static byte[] EmptyLineBytes => GetBytes(EmptyLine);
         internal static byte[] NewLineByte => GetBytes(NewLine);
 
