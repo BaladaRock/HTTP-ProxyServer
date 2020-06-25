@@ -25,11 +25,9 @@ namespace ProxyServer
             InitializeFields();
         }
 
-        public byte[] Remainder { get; private set; }
-
         public bool Chunked { get; private set; }
-
         public int ContentLength { get; private set; }
+        public byte[] Remainder { get; private set; }
 
         public byte[] ReadHeaders(bool checker = false)
         {
@@ -59,6 +57,23 @@ namespace ProxyServer
                 : default;
         }
 
+        private void CheckForHeaderFields(byte[] readLine)
+        {
+            if (Chunked || ContentLength >= 0)
+            {
+                return;
+            }
+
+            if (parser.IsChunked(readLine))
+            {
+                Chunked = true;
+            }
+            else if (uint.TryParse(parser.GetContentLength(readLine), out uint value))
+            {
+                ContentLength = (int)value;
+            }
+        }
+
         private void CheckHeader(bool checker, byte[] readLine)
         {
             if (!checker)
@@ -67,27 +82,6 @@ namespace ProxyServer
             }
 
             CheckForHeaderFields(readLine);
-        }
-
-        private void CheckForHeaderFields(byte[] readLine)
-        {
-            if (parser.IsChunked(readLine))
-            {
-                Chunked = true;
-            }
-
-            if (!uint.TryParse(parser.GetContentLength(readLine), out uint value))
-            {
-                return;
-            }
-
-            ContentLength = (int)value;
-        }
-
-        private byte[] GetNewBuffer()
-        {
-            ReadAndResizeBuffer();
-            return buffer.Skip(buffer.Length - bufferSize).ToArray();
         }
 
         private bool CheckReadProcess()
@@ -112,6 +106,12 @@ namespace ProxyServer
             }
 
             return readLine;
+        }
+
+        private byte[] GetNewBuffer()
+        {
+            ReadAndResizeBuffer();
+            return buffer.Skip(buffer.Length - bufferSize).ToArray();
         }
 
         private void InitializeFields()

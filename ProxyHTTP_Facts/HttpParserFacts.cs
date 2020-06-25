@@ -13,51 +13,6 @@ namespace ProxyHTTP_Facts
         private const string NewLine = Headers.NewLine;
 
         [Fact]
-        public void Test_Contains_Method_Array_Does_NOT_Contain_SubArray()
-        {
-            // Given
-            const string data = "abcd\r\n\r\nab";
-            const string subArray = "\r\r";
-
-            // When
-            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            byte[] readLine = parser.ReadLine(EmptyLine);
-
-            // Then
-            Assert.False(parser.Contains(readLine, Encoding.UTF8.GetBytes(subArray)));
-        }
-
-        [Fact]
-        public void Test_Contains_Method_SubArray_is_at_THE_END()
-        {
-            // Given
-            const string data = "abcd\r\n\r\nab";
-            const string subArray = "\nab";
-
-            // When
-            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            byte[] readLine = parser.ReadLine("\r\n\r\n\r\n");
-
-            // Then
-            Assert.Equal(10, parser.GetPosition(readLine, Encoding.UTF8.GetBytes(subArray)));
-            Assert.True(parser.Contains(readLine, Encoding.UTF8.GetBytes(subArray)));
-        }
-
-        [Fact]
-        public void Test_ContainsMethod_Should_Know_If_A_Response_Contains_EMPTY_LINE()
-        {
-            // Given
-            const string data = "abcd\r\n\r\nab";
-
-            // When
-            var parser = new HttpParser(Encoding.UTF8.GetBytes(data));
-            byte[] readLine = parser.ReadLine(EmptyLine);
-
-            // Then
-            Assert.True(parser.Contains(readLine, Headers.EmptyLineBytes));
-        }
-
-        [Fact]
         public void Test_GetPosition_Array_Has_More_SubArrays()
         {
             // Given

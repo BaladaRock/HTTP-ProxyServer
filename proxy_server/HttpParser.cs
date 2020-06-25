@@ -17,27 +17,6 @@ namespace ProxyServer
             remainingBytes = buffer;
         }
 
-        public bool Contains(byte[] array, byte[] subArray)
-        {
-            return GetPosition(array, subArray) != -1;
-        }
-
-        public string GetContentLength(byte[] readLine)
-        {
-            string line = Encoding.UTF8.GetString(readLine).ToLower();
-            line = line.Replace(" ", string.Empty)
-                       .Replace("\r\n", string.Empty);
-
-            Match match = Regex.Match(line, Headers.ContentHeader);
-
-            if (match.Success)
-            {
-                return line.Substring(line.IndexOf(':') + 1);
-            }
-
-            return null;
-        }
-
         public bool IsChunkComplete(byte[] byteLine, string ending, int minimumSize = 0)
         {
             return minimumSize != 0
@@ -71,16 +50,35 @@ namespace ProxyServer
             return remainingBytes;
         }
 
+        public string GetContentLength(byte[] readLine)
+        {
+            bool check = IsMatch(readLine, Headers.ContentHeader, out string found);
+
+            return check ? found : null;
+        }
+
         public bool IsChunked(byte[] readLine)
         {
-            string line = Encoding.UTF8.GetString(readLine).ToLower();
-            line = line.Replace(" ", string.Empty)
-                       .Replace("\r\n", string.Empty);
+            bool check = IsMatch(readLine, Headers.ChunkedHeader, out string found);
 
-            Match match = Regex.Match(line, Headers.ChunkedHeader);
+            return check && Regex.Match(found, Headers.Chunked).Success;
+        }
 
-            return match.Success &&
-                   Regex.Match(line.Substring(match.Index), Headers.Chunked).Success;
+        private bool IsMatch(byte[] readLine, string toFind, out string subString)
+        {
+            string line = Encoding.UTF8.GetString(readLine)
+                            .Replace(" ", string.Empty)
+                            .Replace("\r\n", string.Empty).ToLower();
+
+            Match match = Regex.Match(line, toFind);
+            if (match.Success)
+            {
+                subString = line.Substring(match.Index + toFind.Length);
+                return true;
+            }
+
+            subString = null;
+            return false;
         }
 
         internal int GetPosition(byte[] array, byte[] subArray)
