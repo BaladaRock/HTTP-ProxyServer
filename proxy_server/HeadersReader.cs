@@ -22,22 +22,23 @@ namespace ProxyServer
             bufferSize = size;
             buffer = new byte[bufferSize];
             headers = Enumerable.Empty<byte>();
-            InitialiseParser();
+            InitializeFields();
         }
 
         public byte[] Remainder { get; private set; }
 
-        public int ContentLength { get; internal set; }
+        public int ContentLength { get; private set; }
 
-        public byte[] ReadHeaders()
+        public byte[] ReadHeaders(bool checker = false)
         {
             byte[] readLine = GetHeader(parser.ReadLine(NewLine));
+
             if (readLine == null)
             {
                 return default;
             }
 
-            CheckForHeaderFields(readLine);
+            CheckHeader(checker, readLine);
             headers = headers.Concat(readLine);
 
             if (!readLine.SequenceEqual(Headers.NewLineByte))
@@ -45,7 +46,7 @@ namespace ProxyServer
                 buffer = parser.GetRemainder() ?? GetNewBuffer();
                 parser = new HttpParser(buffer);
                 readFromStream -= readLine.Length;
-                ReadHeaders();
+                ReadHeaders(true);
             }
 
             Remainder = parser.GetRemainder();
@@ -56,14 +57,24 @@ namespace ProxyServer
                 : default;
         }
 
-        private void CheckForHeaderFields(byte[] readLine)
+        private void CheckHeader(bool checker, byte[] readLine)
         {
-            if (!int.TryParse(parser.GetContentLength(readLine), out int ignored))
+            if (!checker)
             {
                 return;
             }
 
-            ContentLength = ignored;
+            CheckForHeaderFields(readLine);
+        }
+
+        private void CheckForHeaderFields(byte[] readLine)
+        {
+            if (!uint.TryParse(parser.GetContentLength(readLine), out uint value))
+            {
+                return;
+            }
+
+            ContentLength = (int)value;
         }
 
         private byte[] GetNewBuffer()
@@ -96,10 +107,11 @@ namespace ProxyServer
             return readLine;
         }
 
-        private void InitialiseParser()
+        private void InitializeFields()
         {
             ReadFromStream(0);
             parser = new HttpParser(buffer);
+            ContentLength = -1;
         }
 
         private void ReadAndResizeBuffer()

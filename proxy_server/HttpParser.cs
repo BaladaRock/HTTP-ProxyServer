@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace ProxyServer
 {
@@ -23,12 +24,18 @@ namespace ProxyServer
 
         public string GetContentLength(byte[] readLine)
         {
-            int headerTitle = GetPosition(readLine, Headers.ContentHeader);
+            string line = Encoding.UTF8.GetString(readLine).ToLower();
+            line = line.Replace(" ", string.Empty)
+                       .Replace("\r\n", string.Empty);
 
-            return Encoding.UTF8.GetString(
-                            readLine.Skip(headerTitle)
-                                .TakeWhile(bytes => bytes != '\r')
-                                    .ToArray());
+            Match match = Regex.Match(line, Headers.ContentHeader);
+
+            if (match.Success)
+            {
+                return line.Substring(line.IndexOf(':') + 1);
+            }
+
+            return null;
         }
 
         public bool IsChunkComplete(byte[] byteLine, string ending, int minimumSize = 0)

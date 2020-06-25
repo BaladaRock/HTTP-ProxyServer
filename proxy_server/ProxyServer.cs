@@ -209,7 +209,7 @@ namespace ProxyServer
                 SendResponse(browser, headers);
 
                 var checkHeaders = new HttpParser(headers);
-                int contentPosition = checkHeaders.GetPosition(headers, Headers.ContentHeader);
+                int contentPosition = handleHeaders.ContentLength;
                 if (contentPosition != -1)
                 {
                     HandleContentLength(
