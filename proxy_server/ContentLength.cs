@@ -41,7 +41,10 @@ namespace ProxyServer
             }
 
             readFromStream = serverStream.Read(buffer, 0, remainingBytes);
-            browserStream.Write(buffer.Take(readFromStream).ToArray(), 0, readFromStream);
+            browserStream.Write(
+                buffer.Take(readFromStream).ToArray(),
+                0,
+                readFromStream);
         }
     }
 }

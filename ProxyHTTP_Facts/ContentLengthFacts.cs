@@ -120,67 +120,6 @@ namespace ProxyHTTP_Facts
             Assert.Equal("abcd123456789abcdefghijklmno", Encoding.UTF8.GetString(writtenToStream));
         }
 
-        /*[Fact]
-        public void Test_ConvertFromHexadecimal_Should_Correctly_Convert_SmallNumber()
-        {
-            //Given
-            const string hexa = "4";
-            var contentHandler = new ContentLength(null, null);
-
-            //When
-            int bodyLength = contentHandler.ConvertFromHexadecimal(hexa);
-
-            //Then
-            Assert.Equal(4, bodyLength);
-        }
-
-        [Fact]
-        public void Test_ConvertFromHexadecimal_String_Has_Hexadecimal_Symbols()
-        {
-            //Given
-            const string hexa = "AB1";
-            var contentHandler = new ContentLength(null, null);
-
-            //When
-            int bodyLength = contentHandler.ConvertFromHexadecimal(hexa);
-
-            //Then
-            Assert.Equal(2737, bodyLength);
-        }
-
-        [Fact]
-        public void Test_ConvertFromHexadecimal_Should_Correctly_Convert_LargerNumber()
-        {
-            //Given
-            const string hexa = "7AB45";
-            var contentHandler = new ContentLength(null, null);
-
-            //When
-            int bodyLength = contentHandler.ConvertFromHexadecimal(hexa);
-
-            //Then
-            Assert.Equal(502597, bodyLength);
-        }
-
-        [Fact]
-        public void Test_ConvertFromHexadecimal_String_Has_Whitespaces()
-        {
-            //Given
-            const string hexa = " 40 ";
-            var contentHandler = new ContentLength(null, null);
-
-            //When
-            int bodyLength = contentHandler.ConvertFromHexadecimal(hexa);
-
-            //Then
-            Assert.Equal(64, bodyLength);
-
-            internal int ConvertFromHexadecimal(string hexa)
-        {
-            return Convert.ToInt32(hexa.Trim(), 16);
-        }
-        }*/
-
         [Fact]
         public void Test_ReadFromStream_Given_BodyPart_is_Sufficient()
         {
