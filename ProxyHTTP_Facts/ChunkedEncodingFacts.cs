@@ -16,7 +16,7 @@ namespace ProxyHTTP_Facts
             //Given
             const string data = "1234567890";
             var stream = new StubNetworkStream(data);
-            var chunked = new ChunkedEncoding(stream, stream, null);
+            var chunked = new ChunkedEncoding(stream, stream);
 
             //When
             chunked.ReadAndSendBytes(Eight);
@@ -32,10 +32,10 @@ namespace ProxyHTTP_Facts
             const string data = "1234567890";
             byte[] remainder = Encoding.UTF8.GetBytes("abcd");
             var stream = new StubNetworkStream(data);
-            var chunked = new ChunkedEncoding(stream, stream, remainder);
+            var chunked = new ChunkedEncoding(stream, stream);
 
             //When
-            chunked.ReadAndSendBytes(Eight);
+            chunked.ReadAndSendBytes(Eight, remainder);
 
             //Then
             Assert.Equal("1234", Encoding.UTF8.GetString(stream.GetReadBytes));
@@ -48,10 +48,10 @@ namespace ProxyHTTP_Facts
             const string data = "1234567890";
             byte[] remainder = Encoding.UTF8.GetBytes("abcdefgh");
             var stream = new StubNetworkStream(data);
-            var chunked = new ChunkedEncoding(stream, stream, remainder);
+            var chunked = new ChunkedEncoding(stream, stream);
 
             //When
-            chunked.ReadAndSendBytes(Eight);
+            chunked.ReadAndSendBytes(Eight, remainder);
 
             //Then
             Assert.Null(stream.GetReadBytes);
@@ -63,7 +63,7 @@ namespace ProxyHTTP_Facts
             //Given
             const string data = "1234567890";
             var stream = new StubNetworkStream(data);
-            var chunked = new ChunkedEncoding(stream, stream, null);
+            var chunked = new ChunkedEncoding(stream, stream);
 
             //When
             chunked.ReadAndSendBytes(Eight);
@@ -79,10 +79,10 @@ namespace ProxyHTTP_Facts
             const string data = "1234567890";
             byte[] remainder = Encoding.UTF8.GetBytes("abcd");
             var stream = new StubNetworkStream(data);
-            var chunked = new ChunkedEncoding(stream, stream, remainder);
+            var chunked = new ChunkedEncoding(stream, stream);
 
             //When
-            chunked.ReadAndSendBytes(Eight);
+            chunked.ReadAndSendBytes(Eight, remainder);
 
             //Then
             Assert.Equal("abcd1234", Encoding.UTF8.GetString(stream.GetWrittenBytes));
@@ -95,69 +95,99 @@ namespace ProxyHTTP_Facts
             const string data = "1234567890";
             byte[] remainder = Encoding.UTF8.GetBytes("abcdefghij");
             var stream = new StubNetworkStream(data);
-            var chunked = new ChunkedEncoding(stream, stream, remainder);
+            var chunked = new ChunkedEncoding(stream, stream);
 
             //When
-            chunked.ReadAndSendBytes(Eight);
+            chunked.ReadAndSendBytes(Eight, remainder);
 
             //Then
             Assert.Equal("abcdefgh", Encoding.UTF8.GetString(stream.GetWrittenBytes));
         }
 
         [Fact]
-         public void Test_ConvertFromHexadecimal_Should_Correctly_Convert_SmallNumber()
-         {
-             //Given
-             const string hexa = "4";
-             var chunkHandler = new ChunkedEncoding(null, null);
+        public void Test_ConvertFromHexadecimal_Should_Correctly_Convert_SmallNumber()
+        {
+            //Given
+            const string hexa = "4";
+            var chunkHandler = new ChunkedEncoding(null, null);
 
-             //When
-             int bodyLength = chunkHandler.ConvertFromHexadecimal(hexa);
+            //When
+            int bodyLength = chunkHandler.ConvertFromHexadecimal(hexa);
 
-             //Then
-             Assert.Equal(4, bodyLength);
-         }
+            //Then
+            Assert.Equal(4, bodyLength);
+        }
 
-         [Fact]
-         public void Test_ConvertFromHexadecimal_String_Has_Hexadecimal_Symbols()
-         {
-             //Given
-             const string hexa = "AB1";
-             var chunkHandler = new ChunkedEncoding(null, null);
+        [Fact]
+        public void Test_ConvertFromHexadecimal_String_Has_Hexadecimal_Symbols()
+        {
+            //Given
+            const string hexa = "AB1";
+            var chunkHandler = new ChunkedEncoding(null, null);
 
-             //When
-             int bodyLength = chunkHandler.ConvertFromHexadecimal(hexa);
+            //When
+            int bodyLength = chunkHandler.ConvertFromHexadecimal(hexa);
 
-             //Then
-             Assert.Equal(2737, bodyLength);
-         }
+            //Then
+            Assert.Equal(2737, bodyLength);
+        }
 
-         [Fact]
-         public void Test_ConvertFromHexadecimal_Should_Correctly_Convert_LargerNumber()
-         {
-             //Given
-             const string hexa = "7AB45";
-             var chunkHandler = new ChunkedEncoding(null, null);
+        [Fact]
+        public void Test_ConvertFromHexadecimal_Should_Correctly_Convert_LargerNumber()
+        {
+            //Given
+            const string hexa = "7AB45";
+            var chunkHandler = new ChunkedEncoding(null, null);
 
-             //When
-             int bodyLength = chunkHandler.ConvertFromHexadecimal(hexa);
+            //When
+            int bodyLength = chunkHandler.ConvertFromHexadecimal(hexa);
 
-             //Then
-             Assert.Equal(502597, bodyLength);
-         }
+            //Then
+            Assert.Equal(502597, bodyLength);
+        }
 
-         [Fact]
-         public void Test_ConvertFromHexadecimal_String_Has_Whitespaces()
-         {
-             //Given
-             const string hexa = " 40 ";
-             var chunkHandler = new ChunkedEncoding(null, null);
+        [Fact]
+        public void Test_ConvertFromHexadecimal_String_Has_Whitespaces()
+        {
+            //Given
+            const string hexa = " 40 ";
+            var chunkHandler = new ChunkedEncoding(null, null);
 
-             //When
-             int bodyLength = chunkHandler.ConvertFromHexadecimal(hexa);
+            //When
+            int bodyLength = chunkHandler.ConvertFromHexadecimal(hexa);
 
-             //Then
-             Assert.Equal(64, bodyLength);
-         }
+            //Then
+            Assert.Equal(64, bodyLength);
+        }
+
+        [Fact]
+        public void Test_ChunkHandling_SentBytes_For_One_Chunk()
+        {
+            //Given
+            const string data = "0\r\n\r\n1234";
+            var stream = new StubNetworkStream(data);
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            //When
+            chunkHandler.HandleChunked();
+
+            //Then
+            Assert.Null(stream.GetWrittenBytes);
+        }
+
+        [Fact]
+        public void Test_ChunkHandling_SentBytes_For_Two_Chunks()
+        {
+            //Given
+            const string data = "4\r\n1234\r\n0\r\n\r\n1234";
+            var stream = new StubNetworkStream(data);
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            //When
+            chunkHandler.HandleChunked();
+
+            //Then
+            Assert.Equal("1234", Encoding.UTF8.GetString(stream.GetWrittenBytes));
+        }
     }
 }
