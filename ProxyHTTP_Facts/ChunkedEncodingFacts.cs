@@ -8,7 +8,7 @@ namespace ProxyHTTP_Facts
 {
     public class ChunkedEncodingFacts
     {
-        private const string Eight = "8";
+        private const int Eight = 8;
 
         [Fact]
         public void Test_ReadBytes_For_GivenSize_NoRemainder_After_ReadingHeaders()
@@ -188,6 +188,36 @@ namespace ProxyHTTP_Facts
 
             //Then
             Assert.Equal("1234", Encoding.UTF8.GetString(stream.GetWrittenBytes));
+        }
+
+        [Fact]
+        public void Test_ChunkHandling_Assure_ChunkSize_is_read_as_HEXADECIMAL()
+        {
+            //Given
+            const string data = "A\r\n123\r\n45678\r\n0\r\n\r\n1234";
+            var stream = new StubNetworkStream(data);
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            //When
+            chunkHandler.HandleChunked();
+
+            //Then
+            Assert.Equal("123\r\n45678", Encoding.UTF8.GetString(stream.GetWrittenBytes));
+        }
+
+        [Fact]
+        public void Test_ChunkHandling_RepetiveProcess_For_More_Chunks()
+        {
+            //Given
+            const string data = "2 \r\nab\r\n4\r\n1234\r\n0\r\n\r\n1234";
+            var stream = new StubNetworkStream(data);
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            //When
+            chunkHandler.HandleChunked();
+
+            //Then
+            Assert.Equal("ab1234", Encoding.UTF8.GetString(stream.GetWrittenBytes));
         }
     }
 }

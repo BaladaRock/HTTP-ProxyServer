@@ -9,9 +9,11 @@ namespace ProxyHTTP
     public class ChunkedEncoding
     {
         private const int BufferSize = 512;
+        private const string Separator = Headers.NewLine;
 
         private readonly INetworkStream browserStream;
         private readonly INetworkStream serverStream;
+        private HttpParser parser;
         private byte[] buffer;
 
         public ChunkedEncoding(INetworkStream serverStream, INetworkStream browserStream)
@@ -21,22 +23,35 @@ namespace ProxyHTTP
             this.browserStream = browserStream;
         }
 
+        private void InitializeParser(byte[] bodyPart)
+        {
+            parser = new HttpParser(bodyPart);
+        }
+
         public void HandleChunked(byte[] bodyPart = null)
         {
             int readFromStream = serverStream.Read(buffer, 0, BufferSize);
             bodyPart = buffer.Take(readFromStream).ToArray();
+            InitializeParser(bodyPart);
 
-            var parser = new HttpParser(bodyPart);
-
-            byte[] line = parser.ReadLine(Headers.NewLine);
+            byte[] line = parser.ReadLine(Separator);
             int chunkSize = ConvertFromHexadecimal(Encoding.UTF8.GetString(line));
-            ReadAndSendBytes(Convert.ToString(chunkSize), parser.GetRemainder());
+
+            ReadAndSendBytes(chunkSize, parser.GetRemainder());
         }
 
-        internal void ReadAndSendBytes(string toRead, byte[] bodyPart = null)
+        internal void ReadAndSendBytes(int toRead, byte[] bodyPart = null)
         {
+            string chunkSize = Convert.ToString(toRead);
             var bytesReader = new ContentLength(serverStream, browserStream);
-            bytesReader.HandleResponseBody(bodyPart, toRead);
+
+            while (chunkSize != "0")
+            {
+                bytesReader.HandleResponseBody(bodyPart, chunkSize);
+                //bodyPart = bodyPart.Skip(toRead)
+
+            }
+
         }
 
         internal int ConvertFromHexadecimal(string hexa)

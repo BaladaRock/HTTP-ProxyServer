@@ -95,18 +95,15 @@ namespace ProxyHTTP_Facts
         public void Test_IS_Chunk_Compete_Should_Work_For_Given_Minimum_Chunk_Size()
         {
             // Given
-            const string data = "3\r\nabc\r\n2b";
-            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
-            byte[] buffer = new byte[10];
-            stream.Read(buffer, 0, 10);
+            byte[] buffer = Encoding.UTF8.GetBytes("3\r\nabc\r\n2b");
             var parser = new HttpParser(buffer);
 
             // When
-            string line = Encoding.UTF8.GetString(parser.ReadLine(NewLine));
-            byte[] byteLine = parser.ReadBytes(line);
-            int size = Convert.ToInt32(line);
+            parser.ReadLine(NewLine);
+            parser = new HttpParser(parser.GetRemainder());
+            byte[] byteLine = parser.ReadBytes(5);
             // Then
-            Assert.True(parser.IsChunkComplete(byteLine, NewLine, size));
+            Assert.True(parser.IsChunkComplete(byteLine, NewLine, 5));
         }
 
         [Fact]
@@ -120,72 +117,113 @@ namespace ProxyHTTP_Facts
             var chunkReader = new HttpParser(buffer);
 
             // When
-            byte[] byteLine = chunkReader.ReadBytes("5\r\n");
+            byte[] byteLine = chunkReader.ReadBytes(5);
 
             // When, Then
             Assert.False(chunkReader.IsChunkComplete(byteLine, NewLine));
         }
 
         [Fact]
-        public void Test_Read_Bytes_From_ReadLine_Value_Buffer_Has_More_Elements()
+        public void Test_ReadBytes_When_Buffer_is_Larger_than_ReadSize()
         {
             // Given
-            const string data = "3\r\nabc\r\naaaaa";
-            byte[] toCheck = Encoding.UTF8.GetBytes("abc\r\n");
-
-            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
-            byte[] buffer = new byte[24];
-            stream.Read(buffer, 0, 24);
-
+            byte[] buffer = Encoding.UTF8.GetBytes("123456789");
             var chunkReader = new HttpParser(buffer);
 
             // When
-            string line = Encoding.UTF8.GetString(chunkReader.ReadLine(NewLine));
-            byte[] byteLine = chunkReader.ReadBytes(line);
+            byte[] byteLine = chunkReader.ReadBytes(5);
 
             // Then
-            Assert.True(byteLine.SequenceEqual(toCheck));
+            Assert.Equal("12345", Encoding.UTF8.GetString(byteLine));
         }
 
         [Fact]
-        public void Test_Read_Bytes_Should_Read_correctly_for_ReadValue()
+        public void Test_ReadBytes_Should_Read_correctly_for_Simple_case()
         {
             // Given
-            const string data = "3\r\nabc\r\n";
-            byte[] toCheck = Encoding.UTF8.GetBytes("abc\r\n");
-
-            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
-            byte[] buffer = new byte[8];
-            stream.Read(buffer, 0, 8);
-
+            byte[] buffer = Encoding.UTF8.GetBytes("12345");
             var chunkReader = new HttpParser(buffer);
 
             // When
-            string line = Encoding.UTF8.GetString(chunkReader.ReadLine(NewLine));
-            byte[] byteLine = chunkReader.ReadBytes(line);
+            byte[] byteLine = chunkReader.ReadBytes(5);
 
             // Then
-            Assert.True(byteLine.SequenceEqual(toCheck));
+            Assert.True(byteLine.SequenceEqual(buffer));
+        }
+
+        [Fact]
+        public void Test_ReadBytes_Remainder_After_One_Read()
+        {
+            // Given
+            byte[] buffer = Encoding.UTF8.GetBytes("123456789");
+            var chunkReader = new HttpParser(buffer);
+
+            // When
+            chunkReader.ReadBytes(5);
+            byte[] remainder = chunkReader.GetRemainder();
+
+            // Then
+            Assert.Equal("6789", Encoding.UTF8.GetString(remainder));
         }
 
         [Fact]
         public void Test_ReadBytes_Should_Work_Correctly_for_MULTIPLE_Reads()
         {
             // Given
-            const string data = "2b2\r\n\r\n\r\n3\r\n222\r\n";
-            MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(data));
-            byte[] buffer = new byte[32];
+            byte[] buffer = Encoding.UTF8.GetBytes("123456789");
+            var chunkReader = new HttpParser(buffer);
 
             // When
-            stream.Read(buffer, 0, 32);
-            var chunkReader = new HttpParser(buffer);
-            chunkReader.ReadLine(NewLine);
-            chunkReader.ReadLine(EmptyLine);
-            string line = Encoding.UTF8.GetString(chunkReader.ReadLine(NewLine));
-            string byteLine = Encoding.UTF8.GetString(chunkReader.ReadBytes(line));
+            chunkReader.ReadBytes(5);
+            chunkReader.ReadBytes(3);
+            byte[] remainder = chunkReader.GetRemainder();
 
             // Then
-            Assert.Equal("222\r\n", byteLine);
+            Assert.Equal("9", Encoding.UTF8.GetString(remainder));
+        }
+
+        [Fact]
+        public void Test_ReadBytes_After_Reading_More_Than_StreamSize()
+        {
+            // Given
+            byte[] buffer = Encoding.UTF8.GetBytes("123456789");
+            var chunkReader = new HttpParser(buffer);
+
+            // When
+            byte[] bytes = chunkReader.ReadBytes(10);
+
+            // Then
+            Assert.True(bytes.SequenceEqual(buffer));
+        }
+
+        [Fact]
+        public void Test_ReadBytes_More_Than_StreamSize_From_Multiple_Reads()
+        {
+            // Given
+            byte[] buffer = Encoding.UTF8.GetBytes("123456789");
+            var chunkReader = new HttpParser(buffer);
+
+            // When
+            chunkReader.ReadBytes(3);
+            byte[] bytes = chunkReader.ReadBytes(12);
+
+            // Then
+            Assert.Equal("456789", Encoding.UTF8.GetString(bytes));
+        }
+
+        [Fact]
+        public void Test_ReadBytesReminder_After_Reading_More_Than_StreamSize()
+        {
+            // Given
+            byte[] buffer = Encoding.UTF8.GetBytes("123456789");
+            var chunkReader = new HttpParser(buffer);
+
+            // When
+            chunkReader.ReadBytes(10);
+            byte[] remainder = chunkReader.GetRemainder();
+
+            // Then
+            Assert.Null(remainder);
         }
 
         [Fact]

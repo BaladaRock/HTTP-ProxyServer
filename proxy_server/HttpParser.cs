@@ -8,26 +8,31 @@ namespace ProxyServer
 {
     public class HttpParser
     {
-        private byte[] remainingBytes;
         private readonly byte[] buffer;
+        private byte[] remainingBytes;
+        private int position;
 
         public HttpParser(byte[] buffer)
         {
             this.buffer = buffer;
             remainingBytes = buffer;
+            position = 0;
         }
 
         public bool IsChunkComplete(byte[] byteLine, string ending, int minimumSize = 0)
         {
             return minimumSize != 0
-                ? byteLine.Length >= minimumSize + ending.Length
+                ? byteLine.Length >= minimumSize
                 : Encoding.UTF8.GetString(byteLine).EndsWith(ending);
         }
 
-        public byte[] ReadBytes(string line)
+        public byte[] ReadBytes(int toRead)
         {
-            int chunkSize = int.Parse(line, NumberStyles.HexNumber);
-            return remainingBytes.Take(chunkSize + Headers.NewLine.Length).ToArray();
+            position += toRead;
+            remainingBytes = buffer.Skip(position).ToArray();
+
+            return buffer.Skip(position - toRead)
+                .Take(position).ToArray();
         }
 
         public byte[] ReadLine(string separator)
