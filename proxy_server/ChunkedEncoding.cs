@@ -14,7 +14,7 @@ namespace ProxyHTTP
         public ChunkedEncoding(
             INetworkStream serverStream,
             INetworkStream browserStream,
-            byte[] bodyPart)
+            byte[] bodyPart = null)
         {
             this.serverStream = serverStream;
             this.browserStream = browserStream;
@@ -26,6 +26,11 @@ namespace ProxyHTTP
 
             var bytesReader = new ContentLength(serverStream, browserStream);
             bytesReader.HandleResponseBody(bodyPart, toRead);
+        }
+
+        internal int ConvertFromHexadecimal(string hexa)
+        {
+            return Convert.ToInt32(hexa.Trim(), 16);
         }
     }
 }
