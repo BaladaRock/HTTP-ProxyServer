@@ -3,26 +3,32 @@ using System.Linq;
 
 namespace ProxyServer
 {
-    internal class ContentLength
+    public class ContentLength
     {
         private const int BufferSize = 512;
 
         private readonly INetworkStream browserStream;
         private readonly INetworkStream serverStream;
 
-        internal ContentLength(INetworkStream serverStream, INetworkStream browserStream)
+        public ContentLength(INetworkStream serverStream, INetworkStream browserStream)
         {
             this.serverStream = serverStream;
             this.browserStream = browserStream;
         }
 
-        internal void HandleResponseBody(byte[] bodyPart, string bytesToRead)
+        public void HandleResponseBody(byte[] bodyPart, string bytesToRead)
         {
             int remainingBytes = Convert.ToInt32(bytesToRead.Trim());
             if (bodyPart != null)
             {
-                remainingBytes -= bodyPart.Length;
+                if (bodyPart.Length >= remainingBytes)
+                {
+                    WriteOnStream(bodyPart, remainingBytes);
+                    return;
+                }
+
                 browserStream.Write(bodyPart, 0, bodyPart.Length);
+                remainingBytes -= bodyPart.Length;
             }
 
             HandleRemainingBody(remainingBytes);
@@ -41,10 +47,12 @@ namespace ProxyServer
             }
 
             readFromStream = serverStream.Read(buffer, 0, remainingBytes);
-            browserStream.Write(
-                buffer.Take(readFromStream).ToArray(),
-                0,
-                readFromStream);
+            WriteOnStream(buffer, readFromStream);
+        }
+
+        private void WriteOnStream(byte[] buffer, int toWrite)
+        {
+            browserStream.Write(buffer.Take(toWrite).ToArray(), 0, toWrite);
         }
     }
 }

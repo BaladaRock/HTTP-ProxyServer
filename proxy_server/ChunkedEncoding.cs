@@ -21,7 +21,7 @@ namespace ProxyHTTP
             this.bodyPart = bodyPart;
         }
 
-        public void ReadBytes(string toRead)
+        public void ReadAndSendBytes(string toRead)
         {
 
             var bytesReader = new ContentLength(serverStream, browserStream);
