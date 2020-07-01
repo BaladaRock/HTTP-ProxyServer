@@ -9,53 +9,47 @@ namespace ProxyServer
 
         private readonly INetworkStream browserStream;
         private readonly INetworkStream serverStream;
+        private byte[] buffer;
+        private int readFromStream;
 
         public ContentLength(INetworkStream serverStream, INetworkStream browserStream)
         {
             this.serverStream = serverStream;
             this.browserStream = browserStream;
+            buffer = new byte[BufferSize];
+            readFromStream = 0;
         }
 
         public byte[] Remainder { get; internal set; }
 
         public void HandleResponseBody(byte[] bodyPart, string bytesToRead)
         {
-            int remainingBytes = Convert.ToInt32(bytesToRead.Trim());
+            int toRead = Convert.ToInt32(bytesToRead.Trim());
+
             if (bodyPart != null)
             {
-                if (bodyPart.Length >= remainingBytes)
+                if (bodyPart.Length >= toRead)
                 {
-                    WriteOnStream(bodyPart, remainingBytes);
+                    WriteOnStream(bodyPart, toRead);
+                    SetRemainder(bodyPart, toRead);
                     return;
                 }
 
                 WriteOnStream(bodyPart, bodyPart.Length);
-                remainingBytes -= bodyPart.Length;
+                toRead -= bodyPart.Length;
             }
 
-            HandleRemainingBody(remainingBytes);
+            HandleRemainingBody(toRead);
         }
 
-        private void HandleRemainingBody(int remainingBytes)
+        private void SetRemainder(byte[] buffer, int toRead)
         {
-            byte[] buffer = new byte[BufferSize];
-            int readFromStream = 0;
-
-            while (remainingBytes > BufferSize)
+            if (toRead == buffer.Length)
             {
-                readFromStream = serverStream.Read(buffer, 0, BufferSize);
-                WriteOnStream(buffer, readFromStream);
-                remainingBytes -= BufferSize;
+                return;
             }
 
-            readFromStream = serverStream.Read(buffer, 0, remainingBytes);
-            WriteOnStream(buffer, readFromStream);
-        }
-
-        private void WriteOnStream(byte[] buffer, int toWrite)
-        {
-            CheckAndResize(ref buffer, toWrite);
-            browserStream.Write(buffer, 0, toWrite);
+            Remainder = buffer.Skip(toRead).ToArray();
         }
 
         private void CheckAndResize(ref byte[] buffer, int length)
@@ -66,6 +60,29 @@ namespace ProxyServer
             }
 
             buffer = buffer.Take(length).ToArray();
+        }
+
+        private void HandleRemainingBody(int toRead)
+        {
+            while (toRead > BufferSize)
+            {
+                ReadAndWrite(BufferSize);
+                toRead -= BufferSize;
+            }
+
+            ReadAndWrite(toRead);
+        }
+
+        private void ReadAndWrite(int size)
+        {
+            readFromStream = serverStream.Read(buffer, 0, size);
+            WriteOnStream(buffer, readFromStream);
+        }
+
+        private void WriteOnStream(byte[] buffer, int toWrite)
+        {
+            CheckAndResize(ref buffer, toWrite);
+            browserStream.Write(buffer, 0, toWrite);
         }
     }
 }

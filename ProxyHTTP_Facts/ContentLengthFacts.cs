@@ -151,7 +151,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_GetRemainder_When_BodyPart_is_Sufficient()
+        public void Test_GetRemainder_BodyPart_is_Sufficient()
         {
             //Given
             byte[] body = Encoding.UTF8.GetBytes("abcdef");
@@ -164,6 +164,38 @@ namespace ProxyHTTP_Facts
 
             //Then
             Assert.Equal("f", Encoding.UTF8.GetString(remainder));
+        }
+
+        [Fact]
+        public void Test_GetRemainder_BodyPartLength_Equals_TotalBodyLength()
+        {
+            //Given
+            byte[] body = Encoding.UTF8.GetBytes("abcdef");
+            var stream = new StubNetworkStream("abcdefghijklmno");
+            var contentHandler = new ContentLength(stream, stream);
+
+            //When
+            contentHandler.HandleResponseBody(body, "6");
+            byte[] remainder = contentHandler.Remainder;
+
+            //Then
+            Assert.Null(remainder);
+        }
+
+        [Fact]
+        public void Test_GetRemainder_NoRemainder_When_BodyPart_is_NOT_Sufficient()
+        {
+            //Given
+            byte[] body = Encoding.UTF8.GetBytes("abcd");
+            var stream = new StubNetworkStream(TenBytes);
+            var contentHandler = new ContentLength(stream, stream);
+
+            //When
+            contentHandler.HandleResponseBody(body, "10");
+            byte[] remainder = contentHandler.Remainder;
+
+            //Then
+            Assert.Null(remainder);
         }
     }
 }
