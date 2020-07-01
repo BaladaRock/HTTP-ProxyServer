@@ -206,7 +206,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_ChunkHandling_RepetiveProcess_For_More_Chunks()
+        public void Test_ChunkHandling_RepetiveProcess_For_Two_Chunks()
         {
             //Given
             const string data = "2 \r\nab\r\n4\r\n1234\r\n0\r\n\r\n1234";
@@ -218,6 +218,21 @@ namespace ProxyHTTP_Facts
 
             //Then
             Assert.Equal("ab1234", Encoding.UTF8.GetString(stream.GetWrittenBytes));
+        }
+
+        [Fact]
+        public void Test_ChunkHandling_RepetiveProcess_For_More_Chunks()
+        {
+            //Given
+            const string data = "2 \r\nab\r\n4\r\n1234\r\n 3\r\n123\r\n0\r\n\r\n";
+            var stream = new StubNetworkStream(data);
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            //When
+            chunkHandler.HandleChunked();
+
+            //Then
+            Assert.Equal("ab1234123", Encoding.UTF8.GetString(stream.GetWrittenBytes));
         }
     }
 }

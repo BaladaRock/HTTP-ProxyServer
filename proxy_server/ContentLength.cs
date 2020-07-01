@@ -9,15 +9,11 @@ namespace ProxyServer
 
         private readonly INetworkStream browserStream;
         private readonly INetworkStream serverStream;
-        private byte[] buffer;
-        private int readFromStream;
 
         public ContentLength(INetworkStream serverStream, INetworkStream browserStream)
         {
             this.serverStream = serverStream;
             this.browserStream = browserStream;
-            buffer = new byte[BufferSize];
-            readFromStream = 0;
         }
 
         public byte[] Remainder { get; internal set; }
@@ -64,18 +60,19 @@ namespace ProxyServer
 
         private void HandleRemainingBody(int toRead)
         {
+            byte[] buffer = new byte[BufferSize];
             while (toRead > BufferSize)
             {
-                ReadAndWrite(BufferSize);
+                ReadAndWrite(buffer, BufferSize);
                 toRead -= BufferSize;
             }
 
-            ReadAndWrite(toRead);
+            ReadAndWrite(buffer, toRead);
         }
 
-        private void ReadAndWrite(int size)
+        private void ReadAndWrite(byte[] buffer, int size)
         {
-            readFromStream = serverStream.Read(buffer, 0, size);
+            int readFromStream = serverStream.Read(buffer, 0, size);
             WriteOnStream(buffer, readFromStream);
         }
 
