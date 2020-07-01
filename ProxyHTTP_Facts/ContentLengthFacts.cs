@@ -149,5 +149,21 @@ namespace ProxyHTTP_Facts
             //Then
             Assert.Equal("1234", Encoding.UTF8.GetString(writtenToStream));
         }
+
+        [Fact]
+        public void Test_GetRemainder_When_BodyPart_is_Sufficient()
+        {
+            //Given
+            byte[] body = Encoding.UTF8.GetBytes("abcdef");
+            var stream = new StubNetworkStream("abcdefghijklmno");
+            var contentHandler = new ContentLength(stream, stream);
+
+            //When
+            contentHandler.HandleResponseBody(body, "5");
+            byte[] remainder = contentHandler.Remainder;
+
+            //Then
+            Assert.Equal("f", Encoding.UTF8.GetString(remainder));
+        }
     }
 }

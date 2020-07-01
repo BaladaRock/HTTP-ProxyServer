@@ -23,35 +23,33 @@ namespace ProxyHTTP
             this.browserStream = browserStream;
         }
 
-        private void InitializeParser(byte[] bodyPart)
+        private void InitializeParser()
         {
-            parser = new HttpParser(bodyPart);
+            parser = new HttpParser(buffer);
         }
 
         public void HandleChunked(byte[] bodyPart = null)
         {
             int readFromStream = serverStream.Read(buffer, 0, BufferSize);
-            bodyPart = buffer.Take(readFromStream).ToArray();
-            InitializeParser(bodyPart);
+            buffer = buffer.Take(readFromStream).ToArray();
+            InitializeParser();
 
-            byte[] line = parser.ReadLine(Separator);
-            int chunkSize = ConvertFromHexadecimal(Encoding.UTF8.GetString(line));
+            byte[] readLine = parser.ReadLine(Separator);
+            int chunkSize = ConvertFromHexadecimal(Encoding.UTF8.GetString(readLine));
 
+            while (chunkSize != 0)
+            {
+
+            }
             ReadAndSendBytes(chunkSize, parser.GetRemainder());
+            
         }
 
         internal void ReadAndSendBytes(int toRead, byte[] bodyPart = null)
         {
             string chunkSize = Convert.ToString(toRead);
             var bytesReader = new ContentLength(serverStream, browserStream);
-
-            while (chunkSize != "0")
-            {
-                bytesReader.HandleResponseBody(bodyPart, chunkSize);
-                //bodyPart = bodyPart.Skip(toRead)
-
-            }
-
+            bytesReader.HandleResponseBody(bodyPart, chunkSize);
         }
 
         internal int ConvertFromHexadecimal(string hexa)
