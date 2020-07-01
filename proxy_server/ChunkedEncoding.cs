@@ -12,10 +12,10 @@ namespace ProxyHTTP
         private const string Separator = Headers.NewLine;
 
         private readonly INetworkStream browserStream;
+        private readonly byte[] buffer;
         private readonly INetworkStream serverStream;
-        private HttpParser parser;
         private ContentLength chunkHandler;
-        private byte[] buffer;
+        private HttpParser parser;
 
         public ChunkedEncoding(INetworkStream serverStream, INetworkStream browserStream)
         {
@@ -24,41 +24,15 @@ namespace ProxyHTTP
             this.browserStream = browserStream;
         }
 
-        private void InitializeParser(byte[] bytes)
-        {
-            parser = new HttpParser(bytes);
-        }
-
         public void HandleChunked(byte[] bodyPart = null)
         {
             int readFromStream = serverStream.Read(buffer, 0, BufferSize);
-            InitializeParser(buffer.Take(readFromStream).ToArray());
+            ReadSizeAndHandleChunk(buffer.Take(readFromStream).ToArray());
+        }
 
-            byte[] readLine = parser.ReadLine(Separator);
-            int chunkSize = ConvertFromHexadecimal(Encoding.UTF8.GetString(readLine));
-
-            while (chunkSize != 0)
-            {
-                ReadAndSendBytes(
-                    chunkSize,
-                    parser.GetRemainder().ToArray());
-                byte[] remainder = chunkHandler.Remainder;
-                if (remainder == null)
-                {
-                    readFromStream = serverStream.Read(buffer, 0, BufferSize);
-                    InitializeParser(buffer.Take(readFromStream).ToArray());
-                    readLine = parser.ReadLine(Separator);
-                    chunkSize = ConvertFromHexadecimal(Encoding.UTF8.GetString(readLine));
-
-                }
-                else
-                {
-                    InitializeParser(remainder.Skip(Separator.Length).ToArray());
-                    readLine = parser.ReadLine(Separator);
-                    chunkSize = ConvertFromHexadecimal(Encoding.UTF8.GetString(readLine));
-                }
-            }
-            //ReadAndSendBytes(chunkSize, parser.GetRemainder());
+        internal int ConvertFromHexadecimal(string hexa)
+        {
+            return Convert.ToInt32(hexa.Trim(), 16);
         }
 
         internal void ReadAndSendBytes(int toRead, byte[] bodyPart = null)
@@ -68,14 +42,43 @@ namespace ProxyHTTP
             chunkHandler.HandleResponseBody(bodyPart, chunkSize);
         }
 
-        internal int ConvertFromHexadecimal(string hexa)
+        private int GetChunkSize(byte[] newBuffer)
         {
-            return Convert.ToInt32(hexa.Trim(), 16);
+            InitializeParser(newBuffer);
+            byte[] readLine = parser.ReadLine(Separator);
+            return ConvertFromHexadecimal(Encoding.UTF8.GetString(readLine));
         }
 
         private void InitializeChunkHandler()
         {
             chunkHandler = new ContentLength(serverStream, browserStream);
+        }
+
+        private void InitializeParser(byte[] bytes)
+        {
+            parser = new HttpParser(bytes);
+        }
+
+        private void ReadSizeAndHandleChunk(byte[] newBuffer)
+        {
+            int chunkSize = GetChunkSize(newBuffer);
+            if (chunkSize == 0)
+            {
+                return;
+            }
+
+            ReadAndSendBytes(chunkSize, parser.GetRemainder().ToArray());
+            byte[] remainder = chunkHandler.Remainder;
+
+            if (remainder == null)
+            {
+                int readFromStream = serverStream.Read(buffer, 0, BufferSize);
+                ReadSizeAndHandleChunk(buffer.Take(readFromStream).ToArray());
+            }
+            else
+            {
+                ReadSizeAndHandleChunk(remainder.Skip(Separator.Length).ToArray());
+            }
         }
     }
 }
