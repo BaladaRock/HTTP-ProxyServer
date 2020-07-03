@@ -8,12 +8,12 @@ namespace ProxyHTTP
 {
     public class ChunkedEncoding
     {
-        private const int BufferSize = 512;
         private const string Separator = Headers.NewLine;
+        private const int BufferSize = 512;
 
         private readonly INetworkStream browserStream;
-        private readonly byte[] buffer;
         private readonly INetworkStream serverStream;
+        private byte[] buffer;
         private ContentLength chunkHandler;
         private HttpParser parser;
 
@@ -24,10 +24,16 @@ namespace ProxyHTTP
             this.browserStream = browserStream;
         }
 
-        public void HandleChunked(byte[] bodyPart = null)
+        public void HandleChunked(byte[] bodyPart = null, int bodyBytes = 0)
         {
             int readFromStream = serverStream.Read(buffer, 0, BufferSize);
-            ReadSizeAndHandleChunk(buffer.Take(readFromStream).ToArray());
+            if (bodyPart != null)
+            {
+                buffer = bodyPart.Concat(buffer).ToArray();
+                bodyBytes = bodyPart.Length;
+            }
+
+            ReadSizeAndHandleChunk(buffer.Take(bodyBytes + readFromStream).ToArray());
         }
 
         internal int ConvertFromHexadecimal(string hexa)

@@ -138,7 +138,6 @@ namespace ProxyHTTP_Facts
             //Given
             const string hexa = "7AB45";
             var chunkHandler = new ChunkedEncoding(null, null);
-
             //When
             int bodyLength = chunkHandler.ConvertFromHexadecimal(hexa);
 
@@ -230,6 +229,38 @@ namespace ProxyHTTP_Facts
 
             //When
             chunkHandler.HandleChunked();
+
+            //Then
+            Assert.Equal("ab1234123", Encoding.UTF8.GetString(stream.GetWrittenBytes));
+        }
+
+        [Fact]
+        public void Test_ChunkHandling_With_BodyPart_After_Reading_Headers()
+        {
+            //Given
+            const string data = "4\r\n1234\r\n 3\r\n123\r\n0\r\n\r\n";
+            byte[] bodyPart = Encoding.UTF8.GetBytes("2 \r\nab\r\n");
+            var stream = new StubNetworkStream(data);
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            //When
+            chunkHandler.HandleChunked(bodyPart);
+
+            //Then
+            Assert.Equal("ab1234123", Encoding.UTF8.GetString(stream.GetWrittenBytes));
+        }
+
+        [Fact]
+        public void Test_ChunkHandling_FirstReadLine_is_NOT_Complete()
+        {
+            //Given
+            const string data = "b\r\n4\r\n1234\r\n 3\r\n123\r\n0\r\n\r\n";
+            byte[] bodyPart = Encoding.UTF8.GetBytes("2 \r\na");
+            var stream = new StubNetworkStream(data);
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            //When
+            chunkHandler.HandleChunked(bodyPart);
 
             //Then
             Assert.Equal("ab1234123", Encoding.UTF8.GetString(stream.GetWrittenBytes));
