@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace ProxyHTTP
+namespace ProxyServer
 {
     public class ChunkedEncoding
     {
@@ -24,8 +24,9 @@ namespace ProxyHTTP
             this.browserStream = browserStream;
         }
 
-        public void HandleChunked(byte[] bodyPart = null, int bodyBytes = 0)
+        public void HandleChunked(byte[] bodyPart = null)
         {
+            int bodyBytes = 0;
             int readFromStream = serverStream.Read(buffer, 0, BufferSize);
             if (bodyPart != null)
             {
