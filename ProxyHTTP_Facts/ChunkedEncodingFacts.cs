@@ -251,7 +251,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_ChunkHandling_FirstReadLine_is_NOT_Complete()
+        public void Test_ChunkHandling_SecondReadLine_is_NOT_Complete()
         {
             //Given
             const string data = "b\r\n4\r\n1234\r\n 3\r\n123\r\n0\r\n\r\n";
@@ -264,6 +264,56 @@ namespace ProxyHTTP_Facts
 
             //Then
             Assert.Equal("ab1234123", Encoding.UTF8.GetString(stream.GetWrittenBytes));
+        }
+
+        [Fact]
+        public void Test_ChunkHandling_FirstReadLine_is_NOT_Complete()
+        {
+            //Given
+            const string data = "\nab\r\n4\r\n1234\r\n 3\r\n123\r\n0\r\n\r\n";
+            byte[] bodyPart = Encoding.UTF8.GetBytes("2\r");
+            var stream = new StubNetworkStream(data);
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            //When
+            chunkHandler.HandleChunked(bodyPart);
+
+            //Then
+            Assert.Equal("ab1234123", Encoding.UTF8.GetString(stream.GetWrittenBytes));
+        }
+
+        [Fact]
+        public void Test_ChunkHandling_AfterHeader_Follows_ZeroSize_Chunk()
+        {
+            //Given
+            const string data = "\nab\r\n 3\r\n123\r\n0\r\nHeader\r\n\r\n";
+            byte[] bodyPart = Encoding.UTF8.GetBytes("2\r");
+            var stream = new StubNetworkStream(data);
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            //When
+            chunkHandler.HandleChunked(bodyPart);
+
+            //Then
+            Assert.Equal("ab123Header\r\n\r\n",
+                Encoding.UTF8.GetString(stream.GetWrittenBytes));
+        }
+
+        [Fact]
+        public void Test_ChunkHandling_More_AfterHeaders_Follow_ZeroSize_Chunk()
+        {
+            //Given
+            const string data = "\nab\r\n 0\r\nHeader1\r\nHeader2\r\n\r\n";
+            byte[] bodyPart = Encoding.UTF8.GetBytes("2\r");
+            var stream = new StubNetworkStream(data);
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            //When
+            chunkHandler.HandleChunked(bodyPart);
+
+            //Then
+            Assert.Equal("abHeader1\r\nHeader2\r\n\r\n",
+                Encoding.UTF8.GetString(stream.GetWrittenBytes));
         }
     }
 }

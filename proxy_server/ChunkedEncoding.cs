@@ -70,6 +70,7 @@ namespace ProxyHTTP
             int chunkSize = GetChunkSize(newBuffer);
             if (chunkSize == 0)
             {
+                HandleAfterHeaders();
                 return;
             }
 
@@ -85,6 +86,21 @@ namespace ProxyHTTP
             {
                 ReadSizeAndHandleChunk(remainder.Skip(Separator.Length).ToArray());
             }
+        }
+
+        private void HandleAfterHeaders()
+        {
+            byte[] readLine = parser.ReadLine(Separator);
+            if (Encoding.UTF8.GetString(readLine).SequenceEqual(Separator))
+            {
+                return;
+            }
+
+            byte[] toSend = readLine.Concat(
+                parser.ReadLine(Headers.EmptyLine))
+                 .ToArray();
+
+            chunkHandler.HandleResponseBody(toSend, Convert.ToString(toSend.Length));
         }
     }
 }
