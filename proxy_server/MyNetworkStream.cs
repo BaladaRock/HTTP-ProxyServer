@@ -23,8 +23,8 @@ namespace ProxyServer
 
         public void Write(byte[] buffer, int offset, int size)
         {
-            WriteMessage(buffer.Skip(offset).Take(size).ToArray());
             networkStream.Write(buffer, offset, size);
+            WriteMessage(buffer.Skip(offset).Take(size).ToArray());
         }
 
         private void WriteMessage(byte[] buffer)

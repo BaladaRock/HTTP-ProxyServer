@@ -1,7 +1,6 @@
 ﻿using System;
 using Xunit;
 using ProxyServer;
-using ProxyHTTP;
 using System.Text;
 
 namespace ProxyHTTP_Facts

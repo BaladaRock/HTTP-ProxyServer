@@ -45,7 +45,7 @@ namespace ProxyServer
                     }
                     catch (Exception hostException)
                     {
-                        //hostName does not exist
+                        browser.Close();
                     }
                 }
 

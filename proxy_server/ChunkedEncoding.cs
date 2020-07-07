@@ -26,15 +26,17 @@ namespace ProxyServer
 
         public void HandleChunked(byte[] bodyPart = null)
         {
-            int bodyBytes = 0;
-            int readFromStream = serverStream.Read(buffer, 0, BufferSize);
             if (bodyPart != null)
             {
-                buffer = bodyPart.Concat(buffer).ToArray();
-                bodyBytes = bodyPart.Length;
+                ReadSizeAndHandleChunk(bodyPart);
+                /* buffer = bodyPart.Concat(buffer).ToArray();
+                 bodyBytes = bodyPart.Length;*/
+
+                return;
             }
 
-            ReadSizeAndHandleChunk(buffer.Take(bodyBytes + readFromStream).ToArray());
+            int readFromStream = serverStream.Read(buffer, 0, BufferSize);
+            ReadSizeAndHandleChunk(buffer.Take(readFromStream).ToArray());
         }
 
         internal int ConvertFromHexadecimal(string hexa)
@@ -78,7 +80,7 @@ namespace ProxyServer
             ReadAndSendBytes(chunkSize, parser.GetRemainder().ToArray());
             byte[] remainder = chunkHandler.Remainder;
 
-            if (remainder == null)
+            if (remainder == null || remainder.Length <= Separator.Length)
             {
                 int readFromStream = serverStream.Read(buffer, 0, BufferSize);
                 ReadSizeAndHandleChunk(buffer.Take(readFromStream).ToArray());
@@ -92,7 +94,7 @@ namespace ProxyServer
         private void HandleAfterHeaders()
         {
             byte[] readLine = parser.ReadLine(Separator);
-            if (Encoding.UTF8.GetString(readLine).SequenceEqual(Separator))
+            if (readLine == null || Encoding.UTF8.GetString(readLine).SequenceEqual(Separator))
             {
                 return;
             }
