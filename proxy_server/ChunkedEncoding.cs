@@ -17,16 +17,28 @@ namespace ProxyServer
         private ContentLength chunkHandler;
         private HttpParser parser;
 
+        public byte[] Remainder { get; private set; }
+
         public ChunkedEncoding(INetworkStream serverStream, INetworkStream browserStream)
         {
-            buffer = new byte[BufferSize];
+            //buffer = new byte[BufferSize];
             this.serverStream = serverStream;
             this.browserStream = browserStream;
         }
 
         internal void ReadAndSendBytes(byte[] bodyPart, int toRead)
         {
-            browserStream.Write(bodyPart, 0, toRead);
+            buffer = bodyPart;
+            int bytesLength = bodyPart.Length;
+            int readOnStream = toRead > bytesLength
+                ? bytesLength
+                : toRead;
+
+            browserStream.Write(buffer, 0, readOnStream);
+            if (readOnStream < bytesLength)
+            {
+                Remainder = buffer.Skip(readOnStream).ToArray();
+            }
         }
 
         internal int ConvertFromHexadecimal(string hexa)

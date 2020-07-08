@@ -9,94 +9,95 @@ namespace ProxyHTTP_Facts
     {
         private const int Eight = 8;
         private const string TenBytes = "1234567890";
+        private const string DummyData = "A";
 
-       /* [Fact]
-        public void Test_ReadBytes_For_GivenSize_NoRemainder_After_ReadingHeaders()
-        {
-            //Given
-            var stream = new StubNetworkStream(TenBytes);
-            var chunked = new ChunkedEncoding(stream, stream);
+        /* [Fact]
+         public void Test_ReadBytes_For_GivenSize_NoRemainder_After_ReadingHeaders()
+         {
+             //Given
+             var stream = new StubNetworkStream(TenBytes);
+             var chunked = new ChunkedEncoding(stream, stream);
 
-            //When
-            chunked.ReadAndSendBytes(Eight);
+             //When
+             chunked.ReadAndSendBytes(Eight);
 
-            //Then
-            Assert.Equal("12345678", Encoding.UTF8.GetString(stream.GetReadBytes));
-        }
+             //Then
+             Assert.Equal("12345678", Encoding.UTF8.GetString(stream.GetReadBytes));
+         }
 
-        [Fact]
-        public void Test_ReadBytes_For_GivenSize_WITH_Remainder()
-        {
-            //Given
-            byte[] remainder = Encoding.UTF8.GetBytes("abcd");
-            var stream = new StubNetworkStream(TenBytes);
-            var chunked = new ChunkedEncoding(stream, stream);
+         [Fact]
+         public void Test_ReadBytes_For_GivenSize_WITH_Remainder()
+         {
+             //Given
+             byte[] remainder = Encoding.UTF8.GetBytes("abcd");
+             var stream = new StubNetworkStream(TenBytes);
+             var chunked = new ChunkedEncoding(stream, stream);
 
-            //When
-            chunked.ReadAndSendBytes(Eight, remainder);
+             //When
+             chunked.ReadAndSendBytes(Eight, remainder);
 
-            //Then
-            Assert.Equal("1234", Encoding.UTF8.GetString(stream.GetReadBytes));
-        }
+             //Then
+             Assert.Equal("1234", Encoding.UTF8.GetString(stream.GetReadBytes));
+         }
 
-        [Fact]
-        public void Test_ReadBytes_For_GivenSize_WITH_Larger_Remainder()
-        {
-            //Given
-            byte[] remainder = Encoding.UTF8.GetBytes("abcdefgh");
-            var stream = new StubNetworkStream(TenBytes);
-            var chunked = new ChunkedEncoding(stream, stream);
+         [Fact]
+         public void Test_ReadBytes_For_GivenSize_WITH_Larger_Remainder()
+         {
+             //Given
+             byte[] remainder = Encoding.UTF8.GetBytes("abcdefgh");
+             var stream = new StubNetworkStream(TenBytes);
+             var chunked = new ChunkedEncoding(stream, stream);
 
-            //When
-            chunked.ReadAndSendBytes(Eight, remainder);
+             //When
+             chunked.ReadAndSendBytes(Eight, remainder);
 
-            //Then
-            Assert.Null(stream.GetReadBytes);
-        }
+             //Then
+             Assert.Null(stream.GetReadBytes);
+         }
 
-        [Fact]
-        public void Test_SentBytes_NoRemainder_After_ReadingHeaders()
-        {
-            //Given
-            var stream = new StubNetworkStream(TenBytes);
-            var chunked = new ChunkedEncoding(stream, stream);
+         [Fact]
+         public void Test_SentBytes_NoRemainder_After_ReadingHeaders()
+         {
+             //Given
+             var stream = new StubNetworkStream(TenBytes);
+             var chunked = new ChunkedEncoding(stream, stream);
 
-            //When
-            chunked.ReadAndSendBytes(Eight);
+             //When
+             chunked.ReadAndSendBytes(Eight);
 
-            //Then
-            Assert.Equal("12345678", Encoding.UTF8.GetString(stream.GetWrittenBytes));
-        }
+             //Then
+             Assert.Equal("12345678", Encoding.UTF8.GetString(stream.GetWrittenBytes));
+         }
 
-        [Fact]
-        public void Test_SentBytes_When_There_IS_Remainder()
-        {
-            //Given
-            byte[] remainder = Encoding.UTF8.GetBytes("abcd");
-            var stream = new StubNetworkStream(TenBytes);
-            var chunked = new ChunkedEncoding(stream, stream);
+         [Fact]
+         public void Test_SentBytes_When_There_IS_Remainder()
+         {
+             //Given
+             byte[] remainder = Encoding.UTF8.GetBytes("abcd");
+             var stream = new StubNetworkStream(TenBytes);
+             var chunked = new ChunkedEncoding(stream, stream);
 
-            //When
-            chunked.ReadAndSendBytes(Eight, remainder);
+             //When
+             chunked.ReadAndSendBytes(Eight, remainder);
 
-            //Then
-            Assert.Equal("abcd1234", Encoding.UTF8.GetString(stream.GetWrittenBytes));
-        }
+             //Then
+             Assert.Equal("abcd1234", Encoding.UTF8.GetString(stream.GetWrittenBytes));
+         }
 
-        [Fact]
-        public void Test_SentBytes_With_Sufficient_and_Larger_Remainder()
-        {
-            //Given
-            byte[] remainder = Encoding.UTF8.GetBytes("abcdefghij");
-            var stream = new StubNetworkStream(TenBytes);
-            var chunked = new ChunkedEncoding(stream, stream);
+         [Fact]
+         public void Test_SentBytes_With_Sufficient_and_Larger_Remainder()
+         {
+             //Given
+             byte[] remainder = Encoding.UTF8.GetBytes("abcdefghij");
+             var stream = new StubNetworkStream(TenBytes);
+             var chunked = new ChunkedEncoding(stream, stream);
 
-            //When
-            chunked.ReadAndSendBytes(Eight, remainder);
+             //When
+             chunked.ReadAndSendBytes(Eight, remainder);
 
-            //Then
-            Assert.Equal("abcdefgh", Encoding.UTF8.GetString(stream.GetWrittenBytes));
-        }*/
+             //Then
+             Assert.Equal("abcdefgh", Encoding.UTF8.GetString(stream.GetWrittenBytes));
+         }*/
 
         [Fact]
         public void Test_ConvertFromHexadecimal_Should_Correctly_Convert_SmallNumber()
@@ -315,13 +316,72 @@ namespace ProxyHTTP_Facts
         {
             // Given
             byte[] bodyPart = Encoding.UTF8.GetBytes(TenBytes);
-            var stream = new StubNetworkStream("ABCD");
+            var stream = new StubNetworkStream(DummyData);
             var chunkHandler = new ChunkedEncoding(stream, stream);
+
             // When
             chunkHandler.ReadAndSendBytes(bodyPart, 5);
 
             // Then
             Assert.Equal("12345", Encoding.UTF8.GetString(stream.GetWrittenBytes));
+        }
+
+        [Fact]
+        public void Test_ReadSendBytes_Send_MoreBytes_Then_BodyPart_length()
+        {
+            // Given
+            byte[] bodyPart = Encoding.UTF8.GetBytes(TenBytes);
+            var stream = new StubNetworkStream(DummyData);
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            // When
+            chunkHandler.ReadAndSendBytes(bodyPart, 20);
+
+            // Then
+            Assert.Equal(TenBytes, Encoding.UTF8.GetString(stream.GetWrittenBytes));
+        }
+
+        [Fact]
+        public void Test_GetRemainder_After_ReadingBytes_SimpleCase()
+        {
+            // Given
+            byte[] bodyPart = Encoding.UTF8.GetBytes(TenBytes);
+            var stream = new StubNetworkStream(DummyData);
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            // When
+            chunkHandler.ReadAndSendBytes(bodyPart, 5);
+
+            // Then
+            Assert.Equal("67890", Encoding.UTF8.GetString(chunkHandler.Remainder));
+        }
+
+        [Fact]
+        public void Test_GetRemainder_Should_be_NULL_When_All_BodyPart_was_Read()
+        {
+            // Given
+            byte[] bodyPart = Encoding.UTF8.GetBytes(TenBytes);
+            var stream = new StubNetworkStream(DummyData);
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            // When
+            chunkHandler.ReadAndSendBytes(bodyPart, 20);
+
+            // Then
+            Assert.Null(chunkHandler.Remainder);
+        }
+
+        [Fact]
+        public void Test_GetRemainder_Should_be_NULL_NO_StreamRead_Occured()
+        {
+            // Given
+            var stream = new StubNetworkStream(DummyData);
+
+            // When
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            // Then
+            Assert.Null(chunkHandler.Remainder);
         }
     }
 }
