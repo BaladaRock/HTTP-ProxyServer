@@ -51,15 +51,15 @@ namespace ProxyHTTP_Facts
 
             ThrowReadWriteExceptions(buffer, offset, size);
 
-            byte[] sessionBytes = new byte[buffer.Length];
+            byte[] sessionBytes = new byte[size];
             for (int i = offset; i < size; i++)
             {
                sessionBytes[i] = buffer[i];
             }
 
-            GetWrittenBytes = GetWrittenBytes == null
-                ? sessionBytes
-                : GetWrittenBytes.Concat(sessionBytes).ToArray();
+            GetWrittenBytes = GetWrittenBytes != null
+                ? GetWrittenBytes.Concat(sessionBytes).ToArray()
+                : sessionBytes;
         }
 
         private static void ThrowReadWriteExceptions(byte[] buffer, int offset, int size)

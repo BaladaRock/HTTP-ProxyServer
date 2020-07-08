@@ -8,13 +8,13 @@ namespace ProxyHTTP_Facts
     public class ChunkedEncodingFacts
     {
         private const int Eight = 8;
+        private const string TenBytes = "1234567890";
 
-        [Fact]
+       /* [Fact]
         public void Test_ReadBytes_For_GivenSize_NoRemainder_After_ReadingHeaders()
         {
             //Given
-            const string data = "1234567890";
-            var stream = new StubNetworkStream(data);
+            var stream = new StubNetworkStream(TenBytes);
             var chunked = new ChunkedEncoding(stream, stream);
 
             //When
@@ -28,9 +28,8 @@ namespace ProxyHTTP_Facts
         public void Test_ReadBytes_For_GivenSize_WITH_Remainder()
         {
             //Given
-            const string data = "1234567890";
             byte[] remainder = Encoding.UTF8.GetBytes("abcd");
-            var stream = new StubNetworkStream(data);
+            var stream = new StubNetworkStream(TenBytes);
             var chunked = new ChunkedEncoding(stream, stream);
 
             //When
@@ -44,9 +43,8 @@ namespace ProxyHTTP_Facts
         public void Test_ReadBytes_For_GivenSize_WITH_Larger_Remainder()
         {
             //Given
-            const string data = "1234567890";
             byte[] remainder = Encoding.UTF8.GetBytes("abcdefgh");
-            var stream = new StubNetworkStream(data);
+            var stream = new StubNetworkStream(TenBytes);
             var chunked = new ChunkedEncoding(stream, stream);
 
             //When
@@ -60,8 +58,7 @@ namespace ProxyHTTP_Facts
         public void Test_SentBytes_NoRemainder_After_ReadingHeaders()
         {
             //Given
-            const string data = "1234567890";
-            var stream = new StubNetworkStream(data);
+            var stream = new StubNetworkStream(TenBytes);
             var chunked = new ChunkedEncoding(stream, stream);
 
             //When
@@ -75,9 +72,8 @@ namespace ProxyHTTP_Facts
         public void Test_SentBytes_When_There_IS_Remainder()
         {
             //Given
-            const string data = "1234567890";
             byte[] remainder = Encoding.UTF8.GetBytes("abcd");
-            var stream = new StubNetworkStream(data);
+            var stream = new StubNetworkStream(TenBytes);
             var chunked = new ChunkedEncoding(stream, stream);
 
             //When
@@ -91,9 +87,8 @@ namespace ProxyHTTP_Facts
         public void Test_SentBytes_With_Sufficient_and_Larger_Remainder()
         {
             //Given
-            const string data = "1234567890";
             byte[] remainder = Encoding.UTF8.GetBytes("abcdefghij");
-            var stream = new StubNetworkStream(data);
+            var stream = new StubNetworkStream(TenBytes);
             var chunked = new ChunkedEncoding(stream, stream);
 
             //When
@@ -101,7 +96,7 @@ namespace ProxyHTTP_Facts
 
             //Then
             Assert.Equal("abcdefgh", Encoding.UTF8.GetString(stream.GetWrittenBytes));
-        }
+        }*/
 
         [Fact]
         public void Test_ConvertFromHexadecimal_Should_Correctly_Convert_SmallNumber()
@@ -158,7 +153,7 @@ namespace ProxyHTTP_Facts
             Assert.Equal(64, bodyLength);
         }
 
-        [Fact]
+       /* [Fact]
         public void Test_ChunkHandling_SentBytes_For_One_Chunk()
         {
             //Given
@@ -313,6 +308,20 @@ namespace ProxyHTTP_Facts
             //Then
             Assert.Equal("abHeader1\r\nHeader2\r\n\r\n",
                 Encoding.UTF8.GetString(stream.GetWrittenBytes));
+        }*/
+
+        [Fact]
+        public void Test_ReadSendBytes_Written_Bytes_for_Simple_case()
+        {
+            // Given
+            byte[] bodyPart = Encoding.UTF8.GetBytes(TenBytes);
+            var stream = new StubNetworkStream("ABCD");
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+            // When
+            chunkHandler.ReadAndSendBytes(bodyPart, 5);
+
+            // Then
+            Assert.Equal("12345", Encoding.UTF8.GetString(stream.GetWrittenBytes));
         }
     }
 }
