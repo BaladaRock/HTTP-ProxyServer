@@ -16,7 +16,7 @@ namespace ProxyServer
             this.browserStream = browserStream;
         }
 
-        public byte[] Remainder { get; internal set; }
+        public byte[] Remainder { get; private set; }
 
         public void HandleResponseBody(byte[] bodyPart, string bytesToRead)
         {

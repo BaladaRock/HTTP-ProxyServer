@@ -327,22 +327,37 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_ReadSendBytes_Send_MoreBytes_Then_BodyPart_length()
+        public void Test_Remainder_After_Reading_MoreBytes_Then_BodyPart_length()
         {
             // Given
             byte[] bodyPart = Encoding.UTF8.GetBytes(TenBytes);
-            var stream = new StubNetworkStream(DummyData);
+            var stream = new StubNetworkStream("ABC");
             var chunkHandler = new ChunkedEncoding(stream, stream);
 
             // When
-            chunkHandler.ReadAndSendBytes(bodyPart, 20);
+            chunkHandler.ReadAndSendBytes(bodyPart, 12);
 
             // Then
-            Assert.Equal(TenBytes, Encoding.UTF8.GetString(stream.GetWrittenBytes));
+            Assert.Null(chunkHandler.Remainder);
         }
 
         [Fact]
-        public void Test_GetRemainder_After_ReadingBytes_SimpleCase()
+        public void Test_WrittenBytes_After_Reading_MoreBytes_Then_BodyPart_length()
+        {
+            // Given
+            byte[] bodyPart = Encoding.UTF8.GetBytes(TenBytes);
+            var stream = new StubNetworkStream("ABCD");
+            var chunkHandler = new ChunkedEncoding(stream, stream);
+
+            // When
+            chunkHandler.ReadAndSendBytes(bodyPart, 13);
+
+            // Then
+            Assert.Equal("1234567890ABC", Encoding.UTF8.GetString(stream.GetWrittenBytes));
+        }
+
+        [Fact]
+        public void Test_Remainder_After_ReadingBytes_SimpleCase()
         {
             // Given
             byte[] bodyPart = Encoding.UTF8.GetBytes(TenBytes);
@@ -357,22 +372,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_GetRemainder_Should_be_NULL_When_All_BodyPart_was_Read()
-        {
-            // Given
-            byte[] bodyPart = Encoding.UTF8.GetBytes(TenBytes);
-            var stream = new StubNetworkStream(DummyData);
-            var chunkHandler = new ChunkedEncoding(stream, stream);
-
-            // When
-            chunkHandler.ReadAndSendBytes(bodyPart, 20);
-
-            // Then
-            Assert.Null(chunkHandler.Remainder);
-        }
-
-        [Fact]
-        public void Test_GetRemainder_Should_be_NULL_NO_StreamRead_Occured()
+        public void Test_Remainder_Should_be_NULL_NO_StreamRead_Occured()
         {
             // Given
             var stream = new StubNetworkStream(DummyData);

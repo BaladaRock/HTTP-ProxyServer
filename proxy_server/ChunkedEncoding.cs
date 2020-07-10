@@ -28,17 +28,10 @@ namespace ProxyServer
 
         internal void ReadAndSendBytes(byte[] bodyPart, int toRead)
         {
-            buffer = bodyPart;
-            int bytesLength = bodyPart.Length;
-            int readOnStream = toRead > bytesLength
-                ? bytesLength
-                : toRead;
+            chunkHandler = new ContentLength(serverStream, browserStream);
+            chunkHandler.HandleResponseBody(bodyPart, Convert.ToString(toRead));
+            Remainder = chunkHandler.Remainder;
 
-            browserStream.Write(buffer, 0, readOnStream);
-            if (readOnStream < bytesLength)
-            {
-                Remainder = buffer.Skip(readOnStream).ToArray();
-            }
         }
 
         internal int ConvertFromHexadecimal(string hexa)
