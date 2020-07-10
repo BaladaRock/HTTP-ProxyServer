@@ -21,7 +21,7 @@ namespace ProxyServer
 
         public ChunkedEncoding(INetworkStream serverStream, INetworkStream browserStream)
         {
-            //buffer = new byte[BufferSize];
+            buffer = new byte[BufferSize];
             this.serverStream = serverStream;
             this.browserStream = browserStream;
         }
@@ -31,7 +31,6 @@ namespace ProxyServer
             chunkHandler = new ContentLength(serverStream, browserStream);
             chunkHandler.HandleResponseBody(bodyPart, Convert.ToString(toRead));
             Remainder = chunkHandler.Remainder;
-
         }
 
         internal int ConvertFromHexadecimal(string hexa)
@@ -39,8 +38,36 @@ namespace ProxyServer
             return Convert.ToInt32(hexa.Trim(), 16);
         }
 
+        private void InitializeParser(byte[] bytes)
+        {
+            parser = new HttpParser(bytes);
+        }
+
         public void HandleChunked(byte[] bodyPart = null)
         {
+            InitializeParser(bodyPart);
+            byte[] readSize = parser.ReadLine(Separator);
+
+            int chunkSize = ConvertFromHexadecimal(Encoding.UTF8.GetString(readSize));
+            if (chunkSize == 0)
+            {
+                return;
+            }
+
+            ReadAndSendBytes(parser.GetRemainder(), chunkSize);
+            byte[] remainder = chunkHandler.Remainder;
+
+            if (remainder == null || remainder.Length <= Separator.Length)
+            {
+                int readFromStream = serverStream.Read(buffer, 0, BufferSize);
+                HandleChunked(buffer.Take(readFromStream).ToArray());
+            }
+            else
+            {
+                HandleChunked(remainder.Skip(Separator.Length).ToArray());
+            }
+
+
             /*if (bodyPart != null)
             {
                 ReadSizeAndHandleChunk(bodyPart);
@@ -76,10 +103,7 @@ private void InitializeChunkHandler()
    chunkHandler = new ContentLength(serverStream, browserStream);
 }
 
-private void InitializeParser(byte[] bytes)
-{
-   parser = new HttpParser(bytes);
-}
+
 
 private void ReadSizeAndHandleChunk(byte[] newBuffer)
 {
