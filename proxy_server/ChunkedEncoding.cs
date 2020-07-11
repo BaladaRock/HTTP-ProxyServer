@@ -26,7 +26,7 @@ namespace ProxyServer
             this.browserStream = browserStream;
         }
 
-        internal void ReadAndSendBytes(byte[] bodyPart, int toRead)
+        internal void ReadAndSendChunk(byte[] bodyPart, int toRead)
         {
             chunkHandler = new ContentLength(serverStream, browserStream);
             chunkHandler.HandleResponseBody(bodyPart, Convert.ToString(toRead));
@@ -45,8 +45,28 @@ namespace ProxyServer
 
         public void HandleChunked(byte[] bodyPart = null)
         {
+            if (bodyPart == null)
+            {
+                int readFromStream = serverStream.Read(buffer, 0, BufferSize);
+                ReadAndSendBytes(buffer.Take(readFromStream).ToArray());
+            }
+            else
+            {
+                ReadAndSendBytes(bodyPart);
+            }
+        }
+
+        private void ReadAndSendBytes(byte[] bodyPart)
+        {
             InitializeParser(bodyPart);
             byte[] readSize = parser.ReadLine(Separator);
+            if (!IsLineComplete(readSize))
+            {
+                int readFromStream = serverStream.Read(buffer, 0, BufferSize);
+                buffer = readSize.Concat(buffer.Take(readFromStream)).ToArray();
+                ReadAndSendBytes(buffer);
+                return;
+            }
 
             int chunkSize = ConvertFromHexadecimal(Encoding.UTF8.GetString(readSize));
             if (chunkSize == 0)
@@ -54,31 +74,30 @@ namespace ProxyServer
                 return;
             }
 
-            ReadAndSendBytes(parser.GetRemainder(), chunkSize);
+            ReadAndSendChunk(parser.GetRemainder(), chunkSize);
             byte[] remainder = chunkHandler.Remainder;
 
             if (remainder == null || remainder.Length <= Separator.Length)
             {
-                int readFromStream = serverStream.Read(buffer, 0, BufferSize);
-                HandleChunked(buffer.Take(readFromStream).ToArray());
+                ReadAndSendBytes(GetNewBuffer());
             }
             else
             {
-                HandleChunked(remainder.Skip(Separator.Length).ToArray());
+                ReadAndSendBytes(remainder.Skip(Separator.Length).ToArray());
             }
+        }
 
-
-            /*if (bodyPart != null)
-            {
-                ReadSizeAndHandleChunk(bodyPart);
-                buffer = bodyPart.Concat(buffer).ToArray();
-                bodyBytes = bodyPart.Length;
-
-                return;
-            }
-
+        private byte[] GetNewBuffer()
+        {
             int readFromStream = serverStream.Read(buffer, 0, BufferSize);
-            ReadSizeAndHandleChunk(buffer.Take(readFromStream).ToArray());*/
+            return buffer.Take(readFromStream)
+                .SkipWhile(x => Headers.NewLineByte.Contains(x))
+                  .ToArray();
+        }
+
+        private bool IsLineComplete(byte[] readSize)
+        {
+            return parser.IsChunkComplete(readSize, Separator, 3);
         }
 
         /*
