@@ -14,9 +14,6 @@ namespace ProxyServer
 
         internal const string NewLine = "\r\n";
 
-        internal const string ZeroChunk = "0\r\n";
-
-        internal static byte[] EmptyLineBytes => GetBytes(EmptyLine);
         internal static byte[] NewLineByte => GetBytes(NewLine);
 
         private static byte[] GetBytes(string toConvert)

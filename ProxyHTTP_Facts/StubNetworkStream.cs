@@ -32,7 +32,7 @@ namespace ProxyHTTP_Facts
             {
                 if (i >= streamBytes.Length || bytesPosition >= streamBytes.Length)
                 {
-                    //GetReadBytes = buffer.Skip(offset).Take(readBytes).ToArray();
+                    GetReadBytes = buffer.Skip(offset).Take(readBytes).ToArray();
                     return readBytes;
                 }
 
