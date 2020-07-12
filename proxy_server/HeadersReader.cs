@@ -17,16 +17,16 @@ namespace ProxyServer
 
         public HeadersReader(INetworkStream stream, int size)
         {
-            readFromStream = 0;
             networkStream = stream;
             bufferSize = size;
-            buffer = new byte[bufferSize];
-            headers = Enumerable.Empty<byte>();
+
             InitializeFields();
         }
 
         public bool Chunked { get; private set; }
+
         public int ContentLength { get; private set; }
+
         public byte[] Remainder { get; private set; }
 
         public byte[] ReadHeaders(bool checker = false)
@@ -116,10 +116,12 @@ namespace ProxyServer
 
         private void InitializeFields()
         {
+            ContentLength = -1;
+            headers = Enumerable.Empty<byte>();
+            buffer = new byte[bufferSize];
+
             ReadFromStream(0);
             parser = new HttpParser(buffer);
-            ContentLength = -1;
-            Chunked = false;
         }
 
         private void ReadAndResizeBuffer()

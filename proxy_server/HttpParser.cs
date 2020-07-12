@@ -55,8 +55,7 @@ namespace ProxyServer
                 return default;
             }
 
-            byte[] endLine = Encoding.UTF8.GetBytes(separator);
-            int index = GetPosition(remainingBytes, endLine);
+            int index = GetPosition(remainingBytes, Encoding.UTF8.GetBytes(separator));
 
             if (index != -1)
             {
