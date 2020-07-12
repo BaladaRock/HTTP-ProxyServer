@@ -15,6 +15,8 @@ namespace ProxyServer
                 throw new ArgumentNullException(nameof(networkStream));
         }
 
+        public bool DataAvailable => networkStream.DataAvailable;
+
         public int Read(byte[] buffer, int offset, int size)
         {
             WriteMessage(buffer.Skip(offset).Take(size).ToArray());

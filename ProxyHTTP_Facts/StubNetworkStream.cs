@@ -21,6 +21,8 @@ namespace ProxyHTTP_Facts
 
         internal byte[] GetReadBytes { get; private set; }
 
+        public bool DataAvailable => true;
+
         public int Read(byte[] buffer, int offset, int size)
         {
             ThrowReadWriteExceptions(buffer, offset, size);

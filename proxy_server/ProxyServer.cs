@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -110,11 +108,12 @@ namespace ProxyServer
             try
             {
                 NetworkStream browserStream = browser.GetStream();
+                var handleHeaders = new HeadersReader(
+                    new MyNetworkStream(serverStream),
+                    512);
 
-                var handleHeaders = new HeadersReader(new MyNetworkStream(serverStream), 512);
-                byte[] headers = handleHeaders.ReadHeaders();
+                SendResponse(browser, handleHeaders.ReadHeaders());
                 byte[] remainder = handleHeaders.Remainder;
-                SendResponse(browser, headers);
 
                 int contentPosition = handleHeaders.ContentLength;
                 if (contentPosition != -1)

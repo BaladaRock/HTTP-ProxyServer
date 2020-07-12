@@ -1,7 +1,5 @@
 using ProxyServer;
-using System;
 using System.IO;
-using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -92,6 +90,86 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
+        public void Test_GetRemainder_After_Multiple_Reads()
+        {
+            // Given
+            const string data = "1234\r\n\r\nabc";
+            byte[] buffer = Encoding.UTF8.GetBytes(data);
+            var parser = new HttpParser(buffer);
+
+            // When
+            parser.ReadLine(NewLine);
+            parser.ReadLine(NewLine);
+            byte[] remainder = parser.GetRemainder();
+
+            // Then
+            Assert.Equal("abc", Encoding.UTF8.GetString(remainder));
+        }
+
+        [Fact]
+        public void Test_GetRemainder_After_Simple_Read()
+        {
+            // Given
+            const string data = "1234\r\n\r\nabc";
+            byte[] buffer = Encoding.UTF8.GetBytes(data);
+            var parser = new HttpParser(buffer);
+
+            // When
+            parser.ReadLine(EmptyLine);
+            byte[] remainder = parser.GetRemainder();
+
+            // Then
+            Assert.Equal("abc", Encoding.UTF8.GetString(remainder));
+        }
+
+        [Fact]
+        public void Test_GetRemainder_Should_Return_NULL_When_EntireBuffer_WasRead()
+        {
+            // Given
+            const string data = "1234abc";
+            const string separator = "c";
+            byte[] buffer = Encoding.UTF8.GetBytes(data);
+            var parser = new HttpParser(buffer);
+
+            // When
+            parser.ReadLine(separator);
+            byte[] remainder = parser.GetRemainder();
+
+            // Then
+            Assert.Null(remainder);
+        }
+
+        [Fact]
+        public void Test_GetRemainder_ShouldReturn_NULL_When_NO_Separator_Has_been_found()
+        {
+            // Given
+            const string data = "1234abc";
+            byte[] buffer = Encoding.UTF8.GetBytes(data);
+            var parser = new HttpParser(buffer);
+
+            // When
+            parser.ReadLine(NewLine);
+            byte[] remainder = parser.GetRemainder();
+
+            // Then
+            Assert.Null(remainder);
+        }
+
+        [Fact]
+        public void Test_GetRemainder_When_Buffer_is_NULL()
+        {
+            // Given
+            var parser = new HttpParser(null);
+
+            // When
+            parser.ReadLine("abc");
+            var remainder = parser.GetRemainder();
+
+            // Then
+            Assert.Null(remainder);
+        }
+
+        [Fact]
         public void Test_IS_Chunk_Compete_Should_Work_For_Given_Minimum_Chunk_Size()
         {
             // Given
@@ -101,7 +179,7 @@ namespace ProxyHTTP_Facts
             // When
             parser.ReadLine(NewLine);
             parser = new HttpParser(parser.GetRemainder());
-            byte[] byteLine = parser.ReadBytes(5);
+            byte[] byteLine = parser.ReadLine(NewLine);
             // Then
             Assert.True(parser.IsChunkComplete(byteLine, NewLine, 5));
         }
@@ -117,113 +195,10 @@ namespace ProxyHTTP_Facts
             var chunkReader = new HttpParser(buffer);
 
             // When
-            byte[] byteLine = chunkReader.ReadBytes(5);
+            byte[] byteLine = chunkReader.ReadLine(NewLine);
 
             // When, Then
             Assert.False(chunkReader.IsChunkComplete(byteLine, NewLine));
-        }
-
-        [Fact]
-        public void Test_ReadBytes_When_Buffer_is_Larger_than_ReadSize()
-        {
-            // Given
-            byte[] buffer = Encoding.UTF8.GetBytes("123456789");
-            var chunkReader = new HttpParser(buffer);
-
-            // When
-            byte[] byteLine = chunkReader.ReadBytes(5);
-
-            // Then
-            Assert.Equal("12345", Encoding.UTF8.GetString(byteLine));
-        }
-
-        [Fact]
-        public void Test_ReadBytes_Should_Read_correctly_for_Simple_case()
-        {
-            // Given
-            byte[] buffer = Encoding.UTF8.GetBytes("12345");
-            var chunkReader = new HttpParser(buffer);
-
-            // When
-            byte[] byteLine = chunkReader.ReadBytes(5);
-
-            // Then
-            Assert.True(byteLine.SequenceEqual(buffer));
-        }
-
-        [Fact]
-        public void Test_ReadBytes_Remainder_After_One_Read()
-        {
-            // Given
-            byte[] buffer = Encoding.UTF8.GetBytes("123456789");
-            var chunkReader = new HttpParser(buffer);
-
-            // When
-            chunkReader.ReadBytes(5);
-            byte[] remainder = chunkReader.GetRemainder();
-
-            // Then
-            Assert.Equal("6789", Encoding.UTF8.GetString(remainder));
-        }
-
-        [Fact]
-        public void Test_ReadBytes_Should_Work_Correctly_for_MULTIPLE_Reads()
-        {
-            // Given
-            byte[] buffer = Encoding.UTF8.GetBytes("123456789");
-            var chunkReader = new HttpParser(buffer);
-
-            // When
-            chunkReader.ReadBytes(5);
-            chunkReader.ReadBytes(3);
-            byte[] remainder = chunkReader.GetRemainder();
-
-            // Then
-            Assert.Equal("9", Encoding.UTF8.GetString(remainder));
-        }
-
-        [Fact]
-        public void Test_ReadBytes_After_Reading_More_Than_StreamSize()
-        {
-            // Given
-            byte[] buffer = Encoding.UTF8.GetBytes("123456789");
-            var chunkReader = new HttpParser(buffer);
-
-            // When
-            byte[] bytes = chunkReader.ReadBytes(10);
-
-            // Then
-            Assert.True(bytes.SequenceEqual(buffer));
-        }
-
-        [Fact]
-        public void Test_ReadBytes_More_Than_StreamSize_From_Multiple_Reads()
-        {
-            // Given
-            byte[] buffer = Encoding.UTF8.GetBytes("123456789");
-            var chunkReader = new HttpParser(buffer);
-
-            // When
-            chunkReader.ReadBytes(3);
-            byte[] bytes = chunkReader.ReadBytes(12);
-
-            // Then
-            Assert.Equal("456789", Encoding.UTF8.GetString(bytes));
-        }
-
-        [Fact]
-        public void Test_ReadBytesReminder_After_Reading_More_Than_StreamSize()
-        {
-            // Given
-            byte[] buffer = Encoding.UTF8.GetBytes("123456789");
-            var chunkReader = new HttpParser(buffer);
-
-            // When
-            chunkReader.ReadBytes(10);
-            byte[] remainder = chunkReader.GetRemainder();
-
-            // Then
-            Assert.Null(remainder);
         }
 
         [Fact]
@@ -294,72 +269,6 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_GetRemainder_After_Simple_Read()
-        {
-            // Given
-            const string data = "1234\r\n\r\nabc";
-            byte[] buffer = Encoding.UTF8.GetBytes(data);
-            var parser = new HttpParser(buffer);
-
-            // When
-            parser.ReadLine(EmptyLine);
-            byte[] remainder = parser.GetRemainder();
-
-            // Then
-            Assert.Equal("abc", Encoding.UTF8.GetString(remainder));
-        }
-
-        [Fact]
-        public void Test_GetRemainder_After_Multiple_Reads()
-        {
-            // Given
-            const string data = "1234\r\n\r\nabc";
-            byte[] buffer = Encoding.UTF8.GetBytes(data);
-            var parser = new HttpParser(buffer);
-
-            // When
-            parser.ReadLine(NewLine);
-            parser.ReadLine(NewLine);
-            byte[] remainder = parser.GetRemainder();
-
-            // Then
-            Assert.Equal("abc", Encoding.UTF8.GetString(remainder));
-        }
-
-        [Fact]
-        public void Test_GetRemainder_ShouldReturn_NULL_When_NO_Separator_Has_been_found()
-        {
-            // Given
-            const string data = "1234abc";
-            byte[] buffer = Encoding.UTF8.GetBytes(data);
-            var parser = new HttpParser(buffer);
-
-            // When
-            parser.ReadLine(NewLine);
-            byte[] remainder = parser.GetRemainder();
-
-            // Then
-            Assert.Null(remainder);
-        }
-
-        [Fact]
-        public void Test_GetRemainder_Should_Return_NULL_When_EntireBuffer_WasRead()
-        {
-            // Given
-            const string data = "1234abc";
-            const string separator = "c";
-            byte[] buffer = Encoding.UTF8.GetBytes(data);
-            var parser = new HttpParser(buffer);
-
-            // When
-            parser.ReadLine(separator);
-            byte[] remainder = parser.GetRemainder();
-
-            // Then
-            Assert.Null(remainder);
-        }
-
-        [Fact]
         public void Test_ReadLine_When_Buffer_is_NULL()
         {
             // Given
@@ -370,20 +279,6 @@ namespace ProxyHTTP_Facts
 
             // Then
             Assert.Null(read);
-        }
-
-        [Fact]
-        public void Test_GetRemainder_When_Buffer_is_NULL()
-        {
-            // Given
-            var parser = new HttpParser(null);
-
-            // When
-            parser.ReadLine("abc");
-            var remainder = parser.GetRemainder();
-
-            // Then
-            Assert.Null(remainder);
         }
     }
 }

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Globalization;
-using System.Linq;
+﻿using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -10,13 +8,31 @@ namespace ProxyServer
     {
         private readonly byte[] buffer;
         private byte[] remainingBytes;
-        private int position;
 
         public HttpParser(byte[] buffer)
         {
             this.buffer = buffer;
             remainingBytes = buffer;
-            position = 0;
+        }
+
+        public string GetContentLength(byte[] readLine)
+        {
+            bool check = IsMatch(readLine, Headers.ContentHeader, out string found);
+            return check ? found : null;
+        }
+
+        public byte[] GetRemainder()
+        {
+            if (remainingBytes == null)
+            {
+                return default;
+            }
+
+            int remainderLength = remainingBytes.Length;
+
+            return remainderLength == 0 || remainderLength == buffer.Length
+                 ? default
+                 : remainingBytes;
         }
 
         public bool IsChunkComplete(byte[] byteLine, string ending, int minimumSize = 0)
@@ -26,13 +42,10 @@ namespace ProxyServer
                 : Encoding.UTF8.GetString(byteLine).EndsWith(ending);
         }
 
-        public byte[] ReadBytes(int toRead)
+        public bool IsChunked(byte[] readLine)
         {
-            position += toRead;
-            remainingBytes = buffer.Skip(position).ToArray();
-
-            return buffer.Skip(position - toRead)
-                .Take(position).ToArray();
+            bool check = IsMatch(readLine, Headers.ChunkedHeader, out string found);
+            return check && Regex.Match(found, Headers.Chunked).Success;
         }
 
         public byte[] ReadLine(string separator)
@@ -55,18 +68,9 @@ namespace ProxyServer
             return remainingBytes;
         }
 
-        public string GetContentLength(byte[] readLine)
+        internal int GetPosition(byte[] array, byte[] subArray)
         {
-            bool check = IsMatch(readLine, Headers.ContentHeader, out string found);
-
-            return check ? found : null;
-        }
-
-        public bool IsChunked(byte[] readLine)
-        {
-            bool check = IsMatch(readLine, Headers.ChunkedHeader, out string found);
-
-            return check && Regex.Match(found, Headers.Chunked).Success;
+            return SubArrayPosition(array, subArray);
         }
 
         private bool IsMatch(byte[] readLine, string toFind, out string subString)
@@ -84,11 +88,6 @@ namespace ProxyServer
 
             subString = null;
             return false;
-        }
-
-        internal int GetPosition(byte[] array, byte[] subArray)
-        {
-            return SubArrayPosition(array, subArray);
         }
 
         private int SubArrayPosition(byte[] array, byte[] subArray, int start = 0)
@@ -109,20 +108,6 @@ namespace ProxyServer
             }
 
             return -1;
-        }
-
-        public byte[] GetRemainder()
-        {
-            if (remainingBytes == null)
-            {
-                return default;
-            }
-
-            int remainderLength = remainingBytes.Length;
-
-            return remainderLength == 0 || remainderLength == buffer.Length
-                 ? default
-                 : remainingBytes;
         }
     }
 }
