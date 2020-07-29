@@ -110,7 +110,7 @@ namespace ProxyServer
                 NetworkStream browserStream = browser.GetStream();
                 var handleHeaders = new HeadersReader(
                     new MyNetworkStream(serverStream),
-                    512);
+                    20000);
 
                 SendResponse(browser, handleHeaders.ReadHeaders());
                 byte[] remainder = handleHeaders.Remainder;

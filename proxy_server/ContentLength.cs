@@ -64,6 +64,10 @@ namespace ProxyServer
             while (toRead > BufferSize)
             {
                 ReadAndWrite(buffer, BufferSize);
+                if (!serverStream.DataAvailable)
+                {
+                    return;
+                }
                 toRead -= BufferSize;
             }
 
@@ -72,6 +76,11 @@ namespace ProxyServer
 
         private void ReadAndWrite(byte[] buffer, int size)
         {
+            if (!serverStream.DataAvailable)
+            {
+                return;
+            }
+
             int readFromStream = serverStream.Read(buffer, 0, size);
             WriteOnStream(buffer, readFromStream);
         }
