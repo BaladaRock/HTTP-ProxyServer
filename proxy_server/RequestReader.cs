@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ProxyHTTP
+namespace ProxyServer
 {
     public class RequestReader
     {
@@ -13,11 +13,14 @@ namespace ProxyHTTP
             this.request = request;
         }
 
-        public bool Connect { get; internal set; }
+        public bool Connect { get; private set; }
 
-        internal void CheckRequest()
+        public void CheckRequest()
         {
-            throw new NotImplementedException();
+            if (string.Concat(request.Split()).StartsWith("CONNECT"))
+            {
+                Connect = true;
+            }
         }
     }
 }

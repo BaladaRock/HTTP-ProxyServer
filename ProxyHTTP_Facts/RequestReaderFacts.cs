@@ -1,5 +1,4 @@
-﻿using ProxyHTTP;
-using ProxyServer;
+﻿using ProxyServer;
 using Xunit;
 
 namespace ProxyHTTP_Facts
