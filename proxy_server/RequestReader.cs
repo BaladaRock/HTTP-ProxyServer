@@ -22,5 +22,10 @@ namespace ProxyServer
                 Connect = true;
             }
         }
+
+        internal int GetPort()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
