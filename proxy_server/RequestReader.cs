@@ -1,31 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 namespace ProxyServer
 {
     public class RequestReader
     {
-        private string request;
+        private IEnumerable<string> request;
 
         public RequestReader(string request)
         {
-            this.request = request;
+            this.request = request.Trim().Split();
+            IsGet = true;
         }
 
-        public bool Connect { get; private set; }
+        public bool IsConnect { get; private set; }
 
-        public void CheckRequest()
+        public bool IsGet { get; private set; }
+
+        public void CheckConnect()
         {
-            if (string.Concat(request.Split()).StartsWith("CONNECT"))
+            if (request.First() == "CONNECT")
             {
-                Connect = true;
+                IsConnect = true;
+                IsGet = false;
             }
         }
 
         internal int GetPort()
         {
-            throw new NotImplementedException();
+            string hostAndPort = string.Concat(request.Skip(1).Take(1).ToArray());
+            return Convert.ToInt32(hostAndPort.Split(":").Last());
         }
     }
 }

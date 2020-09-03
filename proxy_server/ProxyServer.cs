@@ -31,8 +31,13 @@ namespace ProxyServer
                 Console.WriteLine("Connected!");
 
                 string request = GetRequest(browserStream, browser);
-
-                if (CheckRequest(request))
+                var requestReader = new RequestReader(request);
+                if (requestReader.IsConnect)
+                {
+                    break;
+                    HandleConnect(request);
+                }
+                else if (requestReader.IsGet)
                 {
                     try
                     {
@@ -45,10 +50,17 @@ namespace ProxyServer
                     {
                         browser.Close();
                     }
+
                 }
 
                 browser.Close();
             }
+        }
+
+        private void HandleConnect(string request)
+        {
+            var tunnel = new SSLTunnel(request);
+            
         }
 
         private bool CheckRequest(string request)
