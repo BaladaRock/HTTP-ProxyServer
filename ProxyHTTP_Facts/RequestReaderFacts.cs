@@ -135,7 +135,7 @@ namespace ProxyHTTP_Facts
         public void Test_HOST_Should_Return_NULL_When_NO_Host_was_FOUND()
         {
             //Given
-            const string request = "Header1\r\nHeader2\r\nHost: Andrei\r\nHeader3\r\n";
+            const string request = "Header1\r\nHeader2\r\nHos: Andrei\r\nHeader3\r\n";
             var reader = new RequestReader(request);
 
             //When
