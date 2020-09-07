@@ -34,8 +34,7 @@ namespace ProxyServer
                 var requestReader = new RequestReader(request);
                 if (requestReader.IsConnect)
                 {
-                    break;
-                    HandleConnect(request);
+                    HandleConnect(browser, requestReader);
                 }
                 else if (requestReader.IsGet)
                 {
@@ -50,17 +49,16 @@ namespace ProxyServer
                     {
                         browser.Close();
                     }
-
                 }
 
                 browser.Close();
             }
         }
 
-        private void HandleConnect(string request)
+        private void HandleConnect(TcpClient browser, RequestReader requestReader)
         {
-            var tunnel = new SSLTunnel(request);
-            
+            var tunnel = new TLSHandler(browser);
+            tunnel.StartHandshake(requestReader.Port);
         }
 
         private bool CheckRequest(string request)
@@ -70,7 +68,7 @@ namespace ProxyServer
 
         private string GetHost(string request)
         {
-            string[] requestDetails = request.Trim().Split('\n');
+            string[] requestDetails = request.Trim().Split("\r\n");
             string hostHeader = requestDetails[1];
             int lastPosition = hostHeader.LastIndexOf('\r');
 

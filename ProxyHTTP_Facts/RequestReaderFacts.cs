@@ -90,17 +90,59 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_Port_Should_correctly_Extract_Different_PORT()
+        public void Should_Correctly_Extract_HOST_Simple_Case_GET_Request()
         {
             //Given
-            const string request = "CONNECT www.google-analytics.com:12345 HTTP/1.1 ";
+            const string request = "GET something\r\nHeader\r\nHost: Andrei\r\n";
             var reader = new RequestReader(request);
 
             //When
-            int port = reader.GetPort();
+            string host = reader.Host;
 
             //Then
-            Assert.Equal(12345, port);
+            Assert.Equal("Andrei", host);
+        }
+
+        [Fact]
+        public void Should_Correctly_Extract_HOST_PORT_CONNECT_Request()
+        {
+            //Given
+            const string request = "CONNECT something\r\nHeader\r\nHost: Andrei\r\n";
+            var reader = new RequestReader(request);
+
+            //When
+            string host = reader.Host;
+
+            //Then
+            Assert.Equal("Andrei", host);
+        }
+
+        [Fact]
+        public void Test_HOST_When_HOSTHEADER_appears_Later_duirng_Request()
+        {
+            //Given
+            const string request = "Header1\r\nHeader2\r\nHost: Andrei\r\nHeader3\r\n";
+            var reader = new RequestReader(request);
+
+            //When
+            string host = reader.Host;
+
+            //Then
+            Assert.Equal("Andrei", host);
+        }
+
+        [Fact]
+        public void Test_HOST_Should_Return_NULL_When_NO_Host_was_FOUND()
+        {
+            //Given
+            const string request = "Header1\r\nHeader2\r\nHost: Andrei\r\nHeader3\r\n";
+            var reader = new RequestReader(request);
+
+            //When
+            string host = reader.Host;
+
+            //Then
+            Assert.Null(host);
         }
     }
 }

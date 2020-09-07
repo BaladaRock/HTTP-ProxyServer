@@ -5,7 +5,7 @@ using Xunit;
 
 namespace ProxyHTTP_Facts
 {
-    public class SSLTunnelFacts
+    public class TLSHandlerlFacts
     {
         [Fact]
         public void Test_Thread()

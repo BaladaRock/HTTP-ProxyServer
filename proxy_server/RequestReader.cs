@@ -14,9 +14,12 @@ namespace ProxyServer
             IsGet = true;
         }
 
+        public int Port { get; private set; }
+
         public bool IsConnect { get; private set; }
 
         public bool IsGet { get; private set; }
+        public string Host { get; internal set; }
 
         public void CheckConnect()
         {
@@ -30,7 +33,8 @@ namespace ProxyServer
         internal int GetPort()
         {
             string hostAndPort = string.Concat(request.Skip(1).Take(1).ToArray());
-            return Convert.ToInt32(hostAndPort.Split(":").Last());
+            Port = Convert.ToInt32(hostAndPort.Split(":").Last());
+            return Port;
         }
     }
 }
