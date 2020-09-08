@@ -25,12 +25,12 @@ namespace ProxyServer
             while (true)
             {
                 Console.Write("Waiting for web client... ");
-
                 TcpClient browser = proxy.AcceptTcpClient();
-                NetworkStream browserStream = browser.GetStream();
                 Console.WriteLine("Connected!");
 
+                NetworkStream browserStream = browser.GetStream();
                 string request = GetRequest(browserStream, browser);
+
                 var requestReader = new RequestReader(request);
                 if (requestReader.IsConnect)
                 {
@@ -40,8 +40,9 @@ namespace ProxyServer
                 {
                     try
                     {
-                        string host = GetHost(request);
-                        NetworkStream hostStream = new TcpClient(host, 80).GetStream();
+                        NetworkStream hostStream = new TcpClient(requestReader.Host, 80)
+                            .GetStream();
+
                         SendRequest(hostStream, request);
                         HandleResponse(browser, hostStream);
                     }
@@ -58,21 +59,7 @@ namespace ProxyServer
         private void HandleConnect(TcpClient browser, RequestReader requestReader)
         {
             var tunnel = new TLSHandler(browser);
-            tunnel.StartHandshake(requestReader.Port);
-        }
-
-        private bool CheckRequest(string request)
-        {
-            return request?.StartsWith("GET ") == true;
-        }
-
-        private string GetHost(string request)
-        {
-            string[] requestDetails = request.Trim().Split("\r\n");
-            string hostHeader = requestDetails[1];
-            int lastPosition = hostHeader.LastIndexOf('\r');
-
-            return hostHeader.Substring(6, lastPosition - 6);
+            tunnel.StartHandshake(requestReader.Host, requestReader.Port);
         }
 
         private string GetRequest(NetworkStream stream, TcpClient client)

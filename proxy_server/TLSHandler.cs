@@ -14,7 +14,7 @@ namespace ProxyServer
             this.browser = browser;
         }
 
-        public void StartHandshake(int port)
+        public void StartHandshake(string host, int port)
         {
             throw new NotImplementedException();
         }

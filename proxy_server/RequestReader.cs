@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -7,19 +6,13 @@ namespace ProxyServer
 {
     public class RequestReader
     {
-        private IEnumerable<string> request;
+        private readonly IEnumerable<string> request;
 
         public RequestReader(string request)
         {
             this.request = Regex.Split(request.Trim(), "\r\n");
             IsGet = true;
         }
-
-        public int Port { get; private set; }
-
-        public bool IsConnect { get; private set; }
-
-        public bool IsGet { get; private set; }
 
         public string Host
         {
@@ -28,9 +21,21 @@ namespace ProxyServer
                 string hostHeader = request.FirstOrDefault(
                     x => x.StartsWith("Host:"));
 
-                return hostHeader == null
-                    ? null
-                    : string.Concat(string.Concat(hostHeader.Split()).Skip(5));
+                return hostHeader?.Split().Last();
+            }
+        }
+
+        public bool IsConnect { get; private set; }
+
+        public bool IsGet { get; private set; }
+
+        public int Port
+        {
+            get
+            {
+                return int.TryParse(request.First().Split(':')
+                               .Last().Trim().Split().First(),
+                       out int port) ? port : 0;
             }
         }
 
@@ -41,14 +46,6 @@ namespace ProxyServer
                 IsConnect = true;
                 IsGet = false;
             }
-        }
-
-        internal int GetPort()
-        {
-            Port = Convert.ToInt32(request.First()
-                     .Split(':').Last()
-                       .Split().First());
-            return Port;
         }
     }
 }
