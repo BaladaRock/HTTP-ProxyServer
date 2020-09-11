@@ -52,9 +52,9 @@ namespace ProxyServer
                     {
                         browser.Close();
                     }
-                }
 
-                browser.Close();
+                    browser.Close();
+                }
             }
         }
 

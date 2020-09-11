@@ -13,7 +13,7 @@ namespace ProxyHTTP_Facts
             var reader = new RequestReader(request);
 
             //When
-            reader.CheckConnect();
+            reader.CheckRequestType();
 
             //Then
             Assert.False(reader.IsConnect);
@@ -27,7 +27,7 @@ namespace ProxyHTTP_Facts
             var reader = new RequestReader(request);
 
             //When
-            reader.CheckConnect();
+            reader.CheckRequestType();
 
             //Then
             Assert.True(reader.IsConnect);
@@ -41,7 +41,7 @@ namespace ProxyHTTP_Facts
             var reader = new RequestReader(request);
 
             //When
-            reader.CheckConnect();
+            reader.CheckRequestType();
 
             //Then
             Assert.True(reader.IsConnect);
@@ -55,7 +55,7 @@ namespace ProxyHTTP_Facts
             var reader = new RequestReader(request);
 
             //When
-            reader.CheckConnect();
+            reader.CheckRequestType();
 
             //Then
             Assert.False(reader.IsGet);
@@ -69,7 +69,7 @@ namespace ProxyHTTP_Facts
             var reader = new RequestReader(request);
 
             //When
-            reader.CheckConnect();
+            reader.CheckRequestType();
 
             //Then
             Assert.True(reader.IsGet);
@@ -118,6 +118,20 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
+        public void Test_HOST_Should_Eliminate_Port_From_HostHeader_ConnectRequest()
+        {
+            //Given
+            const string request = "Header1\r\nHost: Andrei:443\r\nHeader3\r\n";
+            var reader = new RequestReader(request);
+
+            //When
+            string host = reader.Host;
+
+            //Then
+            Assert.Equal("Andrei", host);
+        }
+
+        [Fact]
         public void Test_HOST_When_HOSTHEADER_appears_Later_duirng_Request()
         {
             //Given
@@ -132,10 +146,10 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_Port_Should_correctly_Extract_443_PORT_simple_case()
+        public void Test_Port_Should_correctly_Extract_443_PORT_From_HostHeader()
         {
             //Given
-            const string request = "CONNECT www.google-analytics.com:443 HTTP/1.1 ";
+            const string request = "Header1\r\nHeader2\r\nHost: Andrei:443\r\nHeader3\r\n";
             var reader = new RequestReader(request);
 
             //When
@@ -146,7 +160,7 @@ namespace ProxyHTTP_Facts
         }
 
         [Fact]
-        public void Test_Port_Should_correctly_Extract_PORT_Whitespaces()
+        public void Test_Port_Should_Return_Zero_NO_Port_was_Found()
         {
             //Given
             const string request = "CONNECT www.google-analytics.com: 221 HTTP/1.1 ";
@@ -156,7 +170,7 @@ namespace ProxyHTTP_Facts
             int port = reader.Port;
 
             //Then
-            Assert.Equal(221, port);
+            Assert.Equal(0, port);
         }
     }
 }

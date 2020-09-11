@@ -21,20 +21,21 @@ namespace ProxyServer
             httpsServer = new TcpClient(host, port);
 
             Thread clientThread = new Thread(() => CreateTLSTunnel(browser, httpsServer));
-            Thread hostThread = new Thread(() => CreateTLSTunnel(httpsServer, browser));
             clientThread.Start();
-            hostThread.Start();
+
+            Thread serverThread = new Thread(() => CreateTLSTunnel(httpsServer,browser));
+            serverThread.Start();
         }
 
         private void CreateTLSTunnel(TcpClient client, TcpClient server)
         {
-            NetworkStream browserStream = client.GetStream();
-            NetworkStream serverStream = server.GetStream();
-
             byte[] buffer = new byte[2048];
 
             try
             {
+                NetworkStream browserStream = client.GetStream();
+                NetworkStream serverStream = server.GetStream();
+
                 while (client.Connected && server.Connected)
                 {
                     if (browserStream.DataAvailable)
