@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Linq;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 
 namespace ProxyServer
@@ -7,7 +9,6 @@ namespace ProxyServer
     public class TlsHandler
     {
         private readonly TcpClient browser;
-
         private TcpClient httpsServer;
 
         public TlsHandler(TcpClient browser)
@@ -40,6 +41,9 @@ namespace ProxyServer
                     {
                         int read = browserStream.Read(buffer, 0, buffer.Length);
                         serverStream.Write(buffer, 0, read);
+
+                        string message = Encoding.UTF8.GetString(buffer.Take(read).ToArray());
+                        Console.WriteLine($"Encoded message:{message}");
                     }
                 }
             }

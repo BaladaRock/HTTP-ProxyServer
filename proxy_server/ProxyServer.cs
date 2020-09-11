@@ -32,6 +32,8 @@ namespace ProxyServer
                 string request = GetRequest(browserStream, browser);
 
                 var requestReader = new RequestReader(request);
+                requestReader.CheckRequestType();
+
                 if (requestReader.IsConnect)
                 {
                     HandleConnect(browser, requestReader);
