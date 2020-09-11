@@ -133,8 +133,6 @@ namespace ProxyServer
 
         private void ReadFromStream(int position)
         {
-           /* int read = networkStream.Read(buffer, position, buffer.Length);
-            buffer = buffer.Take(read).ToArray();*/
             readFromStream += networkStream.Read(buffer, position, buffer.Length);
         }
     }
