@@ -60,7 +60,7 @@ namespace ProxyServer
 
         private void HandleConnect(TcpClient browser, RequestReader requestReader)
         {
-            var tunnel = new TlsHandler(browser);
+            var tunnel = new TlsHandler(browser, requestReader);
             tunnel.StartHandshake(requestReader.Host, requestReader.Port);
         }
 

@@ -6,12 +6,13 @@ namespace ProxyServer
 {
     public class RequestReader
     {
-        private readonly IEnumerable<string> request;
+        private readonly IEnumerable<string> compressedRequest;
         private string hostHeader;
 
         public RequestReader(string request)
         {
-            this.request = Regex.Split(request.Trim(), "\r\n");
+            compressedRequest = Regex.Split(request.Trim(), "\r\n");
+            Request = request;
             IsGet = true;
             SetHost();
         }
@@ -21,6 +22,8 @@ namespace ProxyServer
         public bool IsConnect { get; private set; }
 
         public bool IsGet { get; private set; }
+
+        public string Request { get; }
 
         public int Port
         {
@@ -33,7 +36,7 @@ namespace ProxyServer
 
         public void CheckRequestType()
         {
-            if (request.First().StartsWith("CONNECT"))
+            if (compressedRequest.First().StartsWith("CONNECT"))
             {
                 IsConnect = true;
                 IsGet = false;
@@ -42,7 +45,7 @@ namespace ProxyServer
 
         private void SetHost()
         {
-            hostHeader = request.FirstOrDefault(
+            hostHeader = compressedRequest.FirstOrDefault(
                   x => x.StartsWith("Host:"));
 
             Host = hostHeader?.Split(':')[1].Trim();
