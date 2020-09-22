@@ -11,7 +11,7 @@ namespace ProxyServer
 
         public RequestReader(string request)
         {
-            compressedRequest = Regex.Split(request.Trim(), "\r\n");
+            compressedRequest = Regex.Split(request.Trim(), Headers.NewLine);
             Request = request;
             IsGet = true;
             SetHost();

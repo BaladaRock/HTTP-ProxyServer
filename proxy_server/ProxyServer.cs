@@ -25,6 +25,7 @@ namespace ProxyServer
             while (true)
             {
                 Console.Write("Waiting for web client... ");
+
                 TcpClient browser = proxy.AcceptTcpClient();
                 Console.WriteLine("Connected!");
 
@@ -53,14 +54,14 @@ namespace ProxyServer
                         browser.Close();
                     }
 
-                    browser.Close();
                 }
+                browser.Close();
             }
         }
 
         private void HandleConnect(TcpClient browser, RequestReader requestReader)
         {
-            var tunnel = new TlsHandler(browser, requestReader);
+            var tunnel = new TlsHandler(browser);
             tunnel.StartHandshake(requestReader.Host, requestReader.Port);
         }
 
