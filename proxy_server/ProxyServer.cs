@@ -11,6 +11,7 @@ namespace ProxyServer
     public class ProxyServer
     {
         private readonly string proxyIP;
+        private object baton = new object();
 
         public ProxyServer(string proxyIP)
         {
@@ -54,14 +55,14 @@ namespace ProxyServer
                         browser.Close();
                     }
 
+                    browser.Close();
                 }
-                browser.Close();
             }
         }
 
         private void HandleConnect(TcpClient browser, RequestReader requestReader)
         {
-            var tunnel = new TlsHandler(browser);
+            var tunnel = new TlsHandler(browser, baton);
             tunnel.StartHandshake(requestReader.Host, requestReader.Port);
         }
 

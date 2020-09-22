@@ -18,7 +18,7 @@ namespace ProxyHTTP_Facts
             byte[] response = tlsTunnel.GetSuccessResponse();
 
             //Then
-            Assert.Equal("HTTP/1.1 200 OK", Encoding.UTF8.GetString(response));
+            Assert.Equal("HTTP/1.1 200 Connection established\r\n\r\n", Encoding.UTF8.GetString(response));
         }
 
         [Fact]
@@ -31,7 +31,7 @@ namespace ProxyHTTP_Facts
             byte[] response = tlsTunnel.GetFailureResponse();
 
             //Then
-            Assert.Equal("503 Service Unavailable", Encoding.UTF8.GetString(response));
+            Assert.Equal("503 Service Unavailable\r\n\r\n", Encoding.UTF8.GetString(response));
         }
     }
 }

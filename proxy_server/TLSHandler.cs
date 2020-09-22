@@ -8,31 +8,38 @@ namespace ProxyServer
 {
     public class TlsHandler
     {
+        private readonly object baton;
         private readonly TcpClient browser;
         private TcpClient httpsServer;
 
-
-        public TlsHandler(TcpClient browser)
+        public TlsHandler(TcpClient browser, object baton = null)
         {
             this.browser = browser;
+            this.baton = baton;
         }
 
         public void StartHandshake(string host, int port)
         {
-            httpsServer = new TcpClient(host, port);
-
-            Thread clientThread = new Thread(() => CreateTLSTunnel(browser, httpsServer));
-            clientThread.Start();
-        }
-
-        internal byte[] GetSuccessResponse()
-        {
-            return Headers.SuccesStatusMessage;
+            try
+            {
+                httpsServer = new TcpClient(host, port);
+                Thread clientThread = new Thread(() => CreateTLSTunnel(browser, httpsServer));
+                clientThread.Start();
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine($"Exception: {exception}");
+            }
         }
 
         internal byte[] GetFailureResponse()
         {
             return Headers.FailureStatusMessage;
+        }
+
+        internal byte[] GetSuccessResponse()
+        {
+            return Headers.SuccesStatusMessage;
         }
 
         private static void WriteMessage(byte[] buffer, int read)
@@ -43,35 +50,40 @@ namespace ProxyServer
 
         private void CreateTLSTunnel(TcpClient client, TcpClient server)
         {
-            byte[] buffer = new byte[2048];
-
             try
             {
-                NetworkStream browserStream = client.GetStream();
-                NetworkStream serverStream = server.GetStream();
-
-                if (!server.Connected)
+                lock (baton)
                 {
-                    browserStream.Write(GetFailureResponse());
-                    //serverStream.Flush();
-                }
+                    byte[] sessionBuffer = new byte[2048];
+                    NetworkStream browserStream = client.GetStream();
+                    NetworkStream serverStream = server.GetStream();
 
-                while (client.Connected && server.Connected)
-                {
-                    browserStream.Write(GetSuccessResponse());
-
-                    if (browserStream.DataAvailable)
+                    if (!server.Connected)
                     {
-                        int browserRead = browserStream.Read(buffer, 0, buffer.Length);
-                        serverStream.Write(buffer, 0, browserRead);
-                        WriteMessage(buffer, browserRead);
+                        SendStatusMessage(browserStream, Headers.FailureStatusMessage);
                     }
-
-                    if (serverStream.DataAvailable)
+                    else
                     {
-                        int serverRead = serverStream.Read(buffer, 0, buffer.Length);
-                        browserStream.Write(buffer, 0, serverRead);
-                        WriteMessage(buffer, serverRead);
+                        SendStatusMessage(browserStream, Headers.SuccesStatusMessage);
+                    }
+                    browserStream.Flush();
+                    serverStream.Flush();
+
+                    while (client.Connected && server.Connected)
+                    {
+                        if (browserStream.DataAvailable)
+                        {
+                            int browserRead = browserStream.Read(sessionBuffer, 0, sessionBuffer.Length);
+                            serverStream.Write(sessionBuffer, 0, browserRead);
+                            WriteMessage(sessionBuffer, browserRead);
+                        }
+
+                        if (serverStream.DataAvailable)
+                        {
+                            int serverRead = serverStream.Read(sessionBuffer, 0, sessionBuffer.Length);
+                            browserStream.Write(sessionBuffer, 0, serverRead);
+                            WriteMessage(sessionBuffer, serverRead);
+                        }
                     }
                 }
             }
@@ -89,6 +101,12 @@ namespace ProxyServer
 
                 Console.WriteLine($"Connection exception: {exception}");
             }
+        }
+
+        private void SendStatusMessage(NetworkStream browserStream, byte[] message)
+        {
+            browserStream.Write(message, 0, message.Length);
+            Console.WriteLine($"Encoding.UTF8.GetString(message)");
         }
     }
 }

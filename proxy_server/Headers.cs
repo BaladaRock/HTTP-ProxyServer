@@ -10,9 +10,13 @@ namespace ProxyServer
         internal const string EmptyLine = "\r\n\r\n";
         internal const string NewLine = "\r\n";
 
-        public static byte[] FailureStatusMessage => GetBytes("503 Service Unavailable");
+        public static byte[] FailureStatusMessage =>
+            GetBytes("503 Service Unavailable\r\n\r\n");
+
         internal static byte[] NewLineByte => GetBytes(NewLine);
-        internal static byte[] SuccesStatusMessage => GetBytes("HTTP/1.1 200 OK");
+
+        internal static byte[] SuccesStatusMessage =>
+            GetBytes("HTTP/1.1 200 Connection established\r\n\r\n");
 
         private static byte[] GetBytes(string toConvert)
         {
