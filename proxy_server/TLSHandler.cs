@@ -8,14 +8,14 @@ namespace ProxyServer
 {
     public class TlsHandler
     {
-        private readonly object baton;
         private readonly TcpClient browser;
+        private readonly byte[] sessionBuffer;
         private TcpClient httpsServer;
 
-        public TlsHandler(TcpClient browser, object baton = null)
+        public TlsHandler(TcpClient browser)
         {
             this.browser = browser;
-            this.baton = baton;
+            sessionBuffer = new byte[2048];
         }
 
         public void StartHandshake(string host, int port)
@@ -48,65 +48,78 @@ namespace ProxyServer
             Console.WriteLine($"Encoded message:{message}");
         }
 
+        private void CheckAndCloseConnections(TcpClient server, TcpClient client)
+        {
+            if (server.Connected)
+            {
+                server.Close();
+            }
+
+            if (client.Connected)
+            {
+                client.Close();
+            }
+        }
+
+        private void CloseConnections()
+        {
+            httpsServer.Close();
+            browser.Close();
+        }
+
         private void CreateTLSTunnel(TcpClient client, TcpClient server)
         {
             try
             {
-                lock (baton)
+                NetworkStream browserStream = client.GetStream();
+                NetworkStream serverStream = server.GetStream();
+
+                SendHandshakeStatus(browserStream, server);
+
+                while (client.Connected && server.Connected)
                 {
-                    byte[] sessionBuffer = new byte[2048];
-                    NetworkStream browserStream = client.GetStream();
-                    NetworkStream serverStream = server.GetStream();
-
-                    if (!server.Connected)
+                    if (browserStream.DataAvailable)
                     {
-                        SendStatusMessage(browserStream, Headers.FailureStatusMessage);
+                        GetAndSendMessage(browserStream, serverStream);
                     }
-                    else
-                    {
-                        SendStatusMessage(browserStream, Headers.SuccesStatusMessage);
-                    }
-                    browserStream.Flush();
-                    serverStream.Flush();
 
-                    while (client.Connected && server.Connected)
+                    if (serverStream.DataAvailable)
                     {
-                        if (browserStream.DataAvailable)
-                        {
-                            int browserRead = browserStream.Read(sessionBuffer, 0, sessionBuffer.Length);
-                            serverStream.Write(sessionBuffer, 0, browserRead);
-                            WriteMessage(sessionBuffer, browserRead);
-                        }
-
-                        if (serverStream.DataAvailable)
-                        {
-                            int serverRead = serverStream.Read(sessionBuffer, 0, sessionBuffer.Length);
-                            browserStream.Write(sessionBuffer, 0, serverRead);
-                            WriteMessage(sessionBuffer, serverRead);
-                        }
+                        GetAndSendMessage(serverStream, browserStream);
                     }
                 }
+
+                CloseConnections();
             }
             catch (Exception exception)
             {
-                if (client.Connected)
-                {
-                    client.Close();
-                }
-
-                if (server.Connected)
-                {
-                    server.Close();
-                }
-
+                CheckAndCloseConnections(server, client);
                 Console.WriteLine($"Connection exception: {exception}");
+            }
+        }
+
+        private void GetAndSendMessage(NetworkStream sender, NetworkStream receiver)
+        {
+            int senderRead = sender.Read(sessionBuffer, 0, sessionBuffer.Length);
+            receiver.Write(sessionBuffer, 0, senderRead);
+            WriteMessage(sessionBuffer, senderRead);
+        }
+
+        private void SendHandshakeStatus(NetworkStream browserStream, TcpClient server)
+        {
+            if (server.Connected)
+            {
+                SendStatusMessage(browserStream, Headers.SuccesStatusMessage);
+            }
+            else
+            {
+                SendStatusMessage(browserStream, Headers.FailureStatusMessage);
             }
         }
 
         private void SendStatusMessage(NetworkStream browserStream, byte[] message)
         {
             browserStream.Write(message, 0, message.Length);
-            Console.WriteLine($"Encoding.UTF8.GetString(message)");
         }
     }
 }
