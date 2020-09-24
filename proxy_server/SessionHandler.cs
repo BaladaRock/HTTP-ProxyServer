@@ -42,10 +42,6 @@ namespace ProxyServer
 
                 browser.Close();
             }
-            else
-            {
-                browser.Close();
-            }
         }
 
         private string GetRequest(NetworkStream stream, TcpClient client)
