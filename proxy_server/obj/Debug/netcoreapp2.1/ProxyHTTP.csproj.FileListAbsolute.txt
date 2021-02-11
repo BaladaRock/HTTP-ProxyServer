@@ -1,0 +1,11 @@
+D:\ProgramData\JuniorMind\OOP\(5.) Retea\ProxyServer\Proxy_Server\proxy_server\proxy_server\bin\Debug\netcoreapp2.1\ProxyHTTP.deps.json
+D:\ProgramData\JuniorMind\OOP\(5.) Retea\ProxyServer\Proxy_Server\proxy_server\proxy_server\bin\Debug\netcoreapp2.1\ProxyHTTP.runtimeconfig.json
+D:\ProgramData\JuniorMind\OOP\(5.) Retea\ProxyServer\Proxy_Server\proxy_server\proxy_server\bin\Debug\netcoreapp2.1\ProxyHTTP.runtimeconfig.dev.json
+D:\ProgramData\JuniorMind\OOP\(5.) Retea\ProxyServer\Proxy_Server\proxy_server\proxy_server\bin\Debug\netcoreapp2.1\ProxyHTTP.dll
+D:\ProgramData\JuniorMind\OOP\(5.) Retea\ProxyServer\Proxy_Server\proxy_server\proxy_server\bin\Debug\netcoreapp2.1\ProxyHTTP.pdb
+D:\ProgramData\JuniorMind\OOP\(5.) Retea\ProxyServer\Proxy_Server\proxy_server\proxy_server\obj\Debug\netcoreapp2.1\ProxyHTTP.csproj.CoreCompileInputs.cache
+D:\ProgramData\JuniorMind\OOP\(5.) Retea\ProxyServer\Proxy_Server\proxy_server\proxy_server\obj\Debug\netcoreapp2.1\ProxyHTTP.AssemblyInfoInputs.cache
+D:\ProgramData\JuniorMind\OOP\(5.) Retea\ProxyServer\Proxy_Server\proxy_server\proxy_server\obj\Debug\netcoreapp2.1\ProxyHTTP.AssemblyInfo.cs
+D:\ProgramData\JuniorMind\OOP\(5.) Retea\ProxyServer\Proxy_Server\proxy_server\proxy_server\obj\Debug\netcoreapp2.1\ProxyHTTP.dll
+D:\ProgramData\JuniorMind\OOP\(5.) Retea\ProxyServer\Proxy_Server\proxy_server\proxy_server\obj\Debug\netcoreapp2.1\ProxyHTTP.pdb
+D:\ProgramData\JuniorMind\OOP\(5.) Retea\ProxyServer\Proxy_Server\proxy_server\proxy_server\obj\Debug\netcoreapp2.1\ProxyHTTP.csprojAssemblyReference.cache
