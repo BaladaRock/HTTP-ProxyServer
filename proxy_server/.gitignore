@@ -1,1 +1,2 @@
-debug.log $ git rm --cached debug.log rm Program.cs $ git commit -m Added to ignore
+
+Program.cs
